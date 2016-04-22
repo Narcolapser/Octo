@@ -9,8 +9,11 @@ import queue
 class LogFile(ttk.Frame):
     def __init__(self,master,con,log,addr):
         ttk.Frame.__init__(self,master)
+        log = self.preProcess(log)
         self.con = con
         self.log = log
+        self.name = log[log.rfind("/")+1:]
+        print(self.name)
         self.sftp = con.open_sftp()
         self.file = self.sftp.open(log)
         self.addr = addr
@@ -33,6 +36,13 @@ class LogFile(ttk.Frame):
         self.filters.heading('#0', text='Filterss for: '+addr, anchor='w')
         
         self.updater = None
+
+    def preProcess(self,val):
+        if "<date>" in val:
+            val = val.replace("<date>",time.strftime("%Y-%m-%d",time.gmtime()))
+
+        print(val)
+        return val
 
     def update(self):
         if not self.updater:
@@ -115,20 +125,13 @@ class LogFile(ttk.Frame):
         self.refilter()
 
     def refilter(self):
-        #print(len(self.disp_tree.get_children()))
         children = self.disp_tree.get_children()
-        #print(dir(children[0]))
-        #print(self.disp_tree.item(children[0]))
         for child_id in children:
             child = self.disp_tree.item(child_id)
-            #print(child['text'])
             for f in self.filters.get_children():
                 fil = self.filters.item(f)
-                #print(fil['text'])
                 if fil['text'] in child['text']:
-                    #print("removing!")
                     self.disp_tree.delete(child_id)
-                    #print("removed.")
                     break
 
     def check_line(self,val):
@@ -148,6 +151,11 @@ class LogFile(ttk.Frame):
         if "WARN" == val[:4]:
             return quickToggle
         return not quickToggle
+
+    def download(self,path):
+        sftp = self.con.open_sftp()
+        sftp.get(self.log,path+self.name)
+        sftp.close()
 
 
 def logLoader(val):
@@ -169,7 +177,7 @@ def connectToAddr():
     for log in config['logs']:
         logf = LogFile(frame,con,log,server_addr.get())
         log_files[logf.getName()] = logf
-        tree.insert(server_addr.get(),'end',server_addr.get()+log,text=log,
+        tree.insert(server_addr.get(),'end',server_addr.get()+log,text=logf.name,
                     values=logf.getName(),tags=('selected'))
         tree.tag_bind('selected','<ButtonRelease-1>',logSelected)
     
@@ -196,8 +204,17 @@ def connectBar(parent):
     conButton.pack(side="right",fill=BOTH)
     inframe.pack(side="top",fill=BOTH)
 
-    name = ttk.Entry(topFrame,textvariable=server_addr)
+    #name = ttk.Entry(topFrame,textvariable=server_addr)
+    #name.pack(side="top",fill=BOTH)
+
+    name = ttk.Combobox(topFrame,textvariable=server_addr)
     name.pack(side="top",fill=BOTH)
+
+    hosts = []
+    for host in config['hosts']:
+        hosts.append(host)
+        #name['values'].append(host)
+    name['values'] = hosts
 
     topFrame.pack(side="top",fill=BOTH)
 
@@ -226,10 +243,23 @@ def filterEntry(parent):
 
     topFrame.pack(side="top",fill=BOTH)
 
+def downloadFiles():
+    item = tree.item(tree.focus())
+
+    try:
+        logf = log_files[item['values'][0]]
+    except Exception as e:
+        print(e)
+        return
+
+    logf.download("C:/development/logs/")
+
+    
+
 config = json.load(open("dev.config"))
 root = Tk()
 
-server_addr = StringVar(master=root, value=config['hosts'][0])
+server_addr = StringVar(master=root, value="Enter/Select Server Address Here")#value=config['hosts'][0])
 filter_entry = StringVar(master=root, value="enter new filters here")
 connections = {}
 log_files = {}
@@ -245,9 +275,8 @@ connectBar(frameLeft)
 tree = ttk.Treeview(frameLeft)
 tree.pack(side="top",fill=BOTH, expand=1)
 
-connectToAddr()
-server_addr = StringVar(master=root, value=config['hosts'][1])
-connectToAddr()
+dlbutton = ttk.Button(frameLeft, text="Download!", command=downloadFiles)
+dlbutton.pack(side="top",fill=BOTH, expand=1)
 
 frameLeft.pack(side='left',fill=Y)
 frame.pack(side='top',fill=BOTH,expand=1)
