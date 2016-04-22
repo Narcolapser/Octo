@@ -175,11 +175,14 @@ def connectToAddr():
     tree.insert('','end',server_addr.get(),text=name,value=con,tags=('clicky','simple'))
     tree.tag_bind('clicky','<ButtonRelease-1>',itemClicked)
     for log in config['logs']:
-        logf = LogFile(frame,con,log,server_addr.get())
-        log_files[logf.getName()] = logf
-        tree.insert(server_addr.get(),'end',server_addr.get()+log,text=logf.name,
-                    values=logf.getName(),tags=('selected'))
-        tree.tag_bind('selected','<ButtonRelease-1>',logSelected)
+        try:
+            logf = LogFile(frame,con,log,server_addr.get())
+            log_files[logf.getName()] = logf
+            tree.insert(server_addr.get(),'end',server_addr.get()+log,text=logf.name,
+                        values=logf.getName(),tags=('selected'))
+            tree.tag_bind('selected','<ButtonRelease-1>',logSelected)
+        except Exception as e:
+            print("woopies! something went wrong: ",e)
     
 
 def itemClicked(val):
@@ -204,16 +207,12 @@ def connectBar(parent):
     conButton.pack(side="right",fill=BOTH)
     inframe.pack(side="top",fill=BOTH)
 
-    #name = ttk.Entry(topFrame,textvariable=server_addr)
-    #name.pack(side="top",fill=BOTH)
-
     name = ttk.Combobox(topFrame,textvariable=server_addr)
     name.pack(side="top",fill=BOTH)
 
     hosts = []
     for host in config['hosts']:
         hosts.append(host)
-        #name['values'].append(host)
     name['values'] = hosts
 
     topFrame.pack(side="top",fill=BOTH)
@@ -276,10 +275,11 @@ tree = ttk.Treeview(frameLeft)
 tree.pack(side="top",fill=BOTH, expand=1)
 
 dlbutton = ttk.Button(frameLeft, text="Download!", command=downloadFiles)
-dlbutton.pack(side="top",fill=BOTH, expand=1)
+dlbutton.pack(side="top",fill=X)
+
 
 frameLeft.pack(side='left',fill=Y)
-frame.pack(side='top',fill=BOTH,expand=1)
+frame.pack(side='top',fill=BOTH, expand=1)
 
 filterFrame.pack(side='right',expand=1,fill=Y)
 filterEntry(filterFrame)
