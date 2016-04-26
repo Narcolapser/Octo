@@ -6,6 +6,12 @@ import threading
 import sqlite3
 import time
 import tempfile
+import os
+import random
+
+tempdir = "C:/Users/toben.archer/AppData/Local/Temp/BOCM/"
+if not os.path.isdir(tempdir):
+    os.mkdir(tempdir)
 
 class LogFile(ttk.Frame):
     def __init__(self,master,con,log,addr,frame,filterFrame):
@@ -16,7 +22,7 @@ class LogFile(ttk.Frame):
         self.name = log[log.rfind("/")+1:]
         self.dbname = self.name[:self.name.find(".")]
         self.dbname = self.dbname[:self.name.find("-")]
-        self.dbname = addr[:addr.find("-")] + "_" + self.dbname
+        self.dbname = addr[:addr.find("-")] + "_" + self.dbname + str(random.randint(0,1000))
         self.sftp = con.open_sftp()
         self.file = self.sftp.open(log)
         self.addr = addr
@@ -42,20 +48,17 @@ class LogFile(ttk.Frame):
         
         self.updater = None
 
-        self.tempdir = tempfile.TemporaryDirectory()
         self.logDB = self.getDBHandle()
         cur = self.logDB.cursor()
         com = "CREATE TABLE {0} (line text)".format(self.dbname)
-        #print(com)
         cur.execute(com)
         self.logDB.commit()
 
         
 
     def getDBHandle(self):
-        #self.tfile = tempfile.NamedTemporaryFile()
-        tf = self.tempdir.name + self.dbname
-        #print(tf)
+        tf = tempdir + self.dbname
+        print(tf)
         con = sqlite3.connect(tf)
         return con
 
@@ -70,11 +73,7 @@ class LogFile(ttk.Frame):
         if not self.updater:
             self.updater = threading.Thread(name=self.getName()+"updater",target=self.__populate)
             self.updater.start()
-        #print(self.updater.is_alive())
         if not self.updater.is_alive():
-            #cur = self.logDB.cursor()
-            #cur.execute("SELECT * FROM {0}".format(self.dbname))
-            #self.new_lines = cur.fetchall()
             print(len(self.new_lines))
             for i in self.new_lines:
                 self.disp_tree.insert('','end',text=i)
@@ -96,9 +95,9 @@ class LogFile(ttk.Frame):
             #deal with line fragments
             self.tail = lines.pop()
 
-            self.append_lines(lines)
-            #self.append_lines_db(lines,upDB,cur)
-
+            #self.append_lines(lines)
+            self.append_lines_db(lines,upDB,cur)
+            
             values = str(self.file.read(65535),'utf-8')
 
             fstats = self.file.stat()
@@ -106,6 +105,7 @@ class LogFile(ttk.Frame):
             loc = self.file.tell()
             self.progress = loc/(size*1.0)
 
+            
             if self.progress > per:
                 print(self.progress*100,len(self.new_lines))
                 per += 0.1
@@ -129,7 +129,9 @@ class LogFile(ttk.Frame):
         upDB.commit()
 
         cur.execute("SELECT * FROM {0}".format(self.dbname))
-        self.new_lines = cur.fetchall()
+        for i in cur.fetchall():
+            nline = i[0]
+            self.new_lines.append(nline)
 
     def getName(self):
         ret = self.addr + ":" + self.log
@@ -192,8 +194,6 @@ class LogFile(ttk.Frame):
         sftp.close()
 
     def selected_values(self):
-##      for i in tree.selection():
-##            print(i)
         ret = []
         for i in self.disp_tree.selection():
             item = self.disp_tree.item(i)

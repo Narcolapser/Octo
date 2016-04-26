@@ -7,10 +7,13 @@ import json
 import threading
 import time
 import queue
+import os
 
-def logLoader(val):
-    val[0].disp_tree.insert('','end',text=val[1])
-    
+#def logLoader(val):
+#    val[0].disp_tree.insert('','end',text=val[1])
+
+def itemClicked(val):
+    pass    
 
 def connectToAddr():
     con = paramiko.SSHClient()
@@ -34,10 +37,6 @@ def connectToAddr():
         except Exception as e:
             print("woopies! something went wrong: ",e)
     
-
-def itemClicked(val):
-    pass
-
 def logSelected(val):
     item = tree.item(tree.focus())
 
@@ -64,16 +63,9 @@ def connectBar(parent):
     for host in config['hosts']:
         hosts.append(host)
     name['values'] = hosts
+    server_addr.set(hosts[0])
 
     topFrame.pack(side="top",fill=BOTH)
-
-def insertFilter():
-    item = tree.item(tree.focus())
-    try:
-        logf = log_files[item['values'][0]]
-        logf.addFilter(filter_entry.get())
-    except Exception as e:
-        print(e)
 
 def filterEntry(parent):
     topFrame = ttk.Frame(parent)
@@ -92,22 +84,36 @@ def filterEntry(parent):
 
     topFrame.pack(side="top",fill=BOTH)
 
-def downloadFiles():
-
+def insertFilter():
     item = tree.item(tree.focus())
-
     try:
         logf = log_files[item['values'][0]]
+        logf.addFilter(filter_entry.get())
     except Exception as e:
         print(e)
-        return
 
-    logf.download("C:/development/logs/")
+def downloadFiles():
+    logs = []
+    sel = tree.selection()
+    
+
+    for i in sel:
+        try:
+            item = tree.item(i)
+            logs.append(log_files[item['values'][0]])
+        except Exception as e:
+            print(e)
+
+    for logf in logs:
+        print(logf.name)
+        log_dir = "c:/development/logs/{0}/".format(logf.addr)
+        if not os.path.isdir(log_dir):
+            os.mkdir(log_dir)
+        logf.download("c:/development/logs/{0}/".format(logf.addr))
+        
 
 
 def clipboard_copy(val):
-    print("Hey look! clipboard function!")
-    print(val)
     item = tree.item(tree.focus())
 
     try:
@@ -125,7 +131,7 @@ def clipboard_copy(val):
 config = json.load(open("dev.config"))
 root = Tk()
 
-server_addr = StringVar(master=root, value="Enter/Select Server Address Here")#value=config['hosts'][0])
+server_addr = StringVar(master=root)#value=config['hosts'][0])
 filter_entry = StringVar(master=root, value="enter new filters here")
 connections = {}
 log_files = {}
