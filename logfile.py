@@ -8,10 +8,6 @@ import time
 import os
 import random
 
-#tempdir = "C:/Users/toben.archer/AppData/Local/Temp/BOCM/"
-#if not os.path.isdir(tempdir):
-#    os.mkdir(tempdir)
-
 class LogFile(ttk.Frame):
     def __init__(self,master,filterFrame,con,log,addr,tempdir):
         ttk.Frame.__init__(self,master)
@@ -23,12 +19,15 @@ class LogFile(ttk.Frame):
         self.tempdir = tempdir.name
         
         self.vis = False
-        self.tail = ""
         self.lines = []
+        self.tail = ""
         self.progress = 0.0
         self.new_lines = []
+        self.numRows = 0
+        self.lastAdded = 0
         self.updater = None
-
+        self.alive = True
+        
         self.__makeConnection()
         self.__makeGUI()
         self.__makeName()
@@ -53,16 +52,18 @@ class LogFile(ttk.Frame):
     def __makeName(self):
         self.name = self.log[self.log.rfind("/")+1:]
         self.dbname = self.name[:self.name.find(".")]
-        self.dbname = self.dbname[:self.name.find("-")]
+        self.dbname = self.dbname.replace("-","_")
         self.dbname = self.addr[:self.addr.find("-")] + "_" + self.dbname + str(random.randint(0,1000))
 
 
     def __makeDB(self):
         self.logDB = self.getDBHandle()
         cur = self.logDB.cursor()
-        com = "CREATE TABLE {0} (line text)".format(self.dbname)
+        com = "CREATE TABLE lines (ID integer, line text)"
         cur.execute(com)
         self.logDB.commit()
+
+        self.update_cur = cur
         
 
     def getDBHandle(self):
@@ -74,59 +75,48 @@ class LogFile(ttk.Frame):
     def preProcess(self,val):
         if "<date>" in val:
             val = val.replace("<date>",time.strftime("%Y-%m-%d",time.gmtime()))
-
-        #print(val)
         return val
 
-    def update(self,update_num=1000):
+    def update(self,update_num=100):
         i = update_num
-        while i > 0 and len(self.new_lines):
-            self.disp_tree.insert('','end',text=self.new_lines.pop())
+        row = self.update_cur.fetchone()
+        while i > 0 and row:
+            self.lastAdded = row[0]
+            self.disp_tree.insert('','end',text=row[1])
             i -= 1
+            row = self.update_cur.fetchone()
 
-##        if not self.updater.is_alive():
-##            print(len(self.new_lines))
-##            for i in self.new_lines:
-##                self.disp_tree.insert('','end',text=i)
-##            self.new_lines = []
-##            self.updater = threading.Thread(name=self.getName()+"updater",target=self.__populate)
-##            self.updater.start()
-##        else:
-##            return False
-        
+        if not row:
+            com = "SELECT * FROM lines WHERE ID > {0}".format(self.lastAdded)
+            self.update_cur.execute(com)
+            
         
     def __populate(self):
         values = str(self.file.read(65535),'utf-8')
         per = 0.1
         upDB = self.getDBHandle()
         cur = upDB.cursor()
-        while len(values) > 1000:
-            values = self.tail + values
-            lines = values.splitlines()
+        while self.alive:
+            while len(values) > 100:
+                values = self.tail + values
+                lines = values.splitlines()
 
-            #deal with line fragments
-            self.tail = lines.pop()
+                #deal with line fragments
+                self.tail = lines.pop()
+                
+                self.append_lines_db(lines,upDB,cur)
+                
+                values = str(self.file.read(65535),'utf-8')
 
-            #self.append_lines(lines)
-            self.append_lines_db(lines,upDB,cur)
-            
-            values = str(self.file.read(65535),'utf-8')
+                fstats = self.file.stat()
+                size = fstats.st_size
+                loc = self.file.tell()
+                self.progress = loc/(size*1.0)
 
-            fstats = self.file.stat()
-            size = fstats.st_size
-            loc = self.file.tell()
-            self.progress = loc/(size*1.0)
+                #print("we are {0}% through {1}.".format(self.progress*100,self.log))
 
-            
-            if self.progress > per:
-                print(self.progress*100,len(self.new_lines))
-                per += 0.1
-
-            #if len(self.new_lines)> 100000: break
-
-        self.tail += values
-
-        print("there were {0} new lines.".format(len(self.new_lines)))
+            self.tail += values
+            time.sleep(60)
 
     def append_lines(self,lines):
         for line in lines:
@@ -135,15 +125,18 @@ class LogFile(ttk.Frame):
                 self.new_lines.append(line)
 
     def append_lines_db(self,lines,upDB,cur):
-        for line in lines:
-            inserts = 'INSERT INTO {0} VALUES (?)'.format(self.dbname)
-            cur.execute(inserts,(line,))
-        upDB.commit()
-
-        cur.execute("SELECT * FROM {0}".format(self.dbname))
-        for i in cur.fetchall():
-            nline = i[0]
-            self.new_lines.append(nline)
+        if len(lines):
+            for line in lines:
+                self.numRows += 1
+                inserts = 'INSERT INTO lines VALUES (?,?)'.format(self.dbname)
+                cur.execute(inserts,(self.numRows,line))
+            for i in range(10):
+                try:
+                    upDB.commit()
+                    break
+                except Exception as e:
+                    print("failed to commit to {1} on try {0}: ".format(i,self.dbname),e)
+            
 
     def getName(self):
         ret = self.addr + ":" + self.log

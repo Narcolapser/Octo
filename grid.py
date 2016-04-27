@@ -26,15 +26,50 @@ def connectToAddr():
     connections[name]=con
     tree.insert('','end',server_addr.get(),text=name,value=con,tags=('clicky','simple'))
     tree.tag_bind('clicky','<ButtonRelease-1>',itemClicked)
+
+    logs = []
+    
     for log in config['logs']:
+        logs.append(resolve_log(con,log))
+    
+    for log in logs:
         try:
-            logf = LogFile(frame,filterFrame,con,log,server_addr.get(),tempdir)
+            logf = LogFile(frame,filterFrame,con,log[0],server_addr.get(),tempdir)
             log_files[logf.getName()] = logf
-            tree.insert(server_addr.get(),'end',server_addr.get()+log,text=logf.name,
+            parent = tree.insert(server_addr.get(),'end',server_addr.get()+log[0],text=logf.name,
                         values=logf.getName(),tags=('selected'))
             tree.tag_bind('selected','<ButtonRelease-1>',logSelected)
         except Exception as e:
-            print("woopies! something went wrong: ",e)
+            print("woopies! something went wrong with main log: ",e)
+            continue
+
+##        if len(log) > 1:
+##            for sub_log in log[1]:
+##                try:
+##                    print(sub_log)
+##                    logf = LogFile(frame,filterFrame,con,sub_log,server_addr.get(),tempdir)
+##                    log_files[logf.getName()] = logf
+##                    tree.insert(parent,'end',server_addr.get()+log[0],text=logf.name,
+##                            values=logf.getName(),tags=('selected'))
+##                    tree.tag_bind('selected','<ButtonRelease-1>',logSelected)
+##                except Exception as e:
+##                    print("FAILURE!")
+        
+
+def resolve_log(con,log):
+    #print(log)
+    root = log['root'] + log['name']
+    #print(root)
+    if 'sequence' in log:
+        com = "ls " + log['root'] + log['sequence'].format(date="*")
+        stdin, stdout, stderr = con.exec_command(com)
+        sub_logs = stdout.readlines()
+        sub_logs = [i.replace('\n','') for i in sub_logs]
+        #print(sub_logs)
+        return (root,sub_logs)
+    else:
+        return (root,)
+            
     
 def logSelected(val):
     item = tree.item(tree.focus())
@@ -171,5 +206,3 @@ filterEntry(filterFrame)
 root.bind_all('<Control-Key-c>',clipboard_copy)
 
 root.after(100,update_logs)
-
-print("ended!")
