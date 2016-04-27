@@ -9,13 +9,14 @@ Features working:
 	Download Log file
 	Download Multiple Log Files
 	Copy selected section of log file.
+	Fix threading so the UI doesn't freeze when the treeview is being populated.
 
 Features to work on:
-	Fix threading so the UI doesn't freeze when the treeview is being populated.
 	Nest logs: there are instances of the same log for different days. I'd like to
 		nest these so they are all available, but still compact.
 	Add logfiles dynamically
 	Add servers dynamically
+	Fix filters to leverage the SQL backend
 	Zip Files before downloading
 
 Some dream features:

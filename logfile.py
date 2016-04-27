@@ -5,59 +5,68 @@ import paramiko
 import threading
 import sqlite3
 import time
-import tempfile
 import os
 import random
 
-tempdir = "C:/Users/toben.archer/AppData/Local/Temp/BOCM/"
-if not os.path.isdir(tempdir):
-    os.mkdir(tempdir)
+#tempdir = "C:/Users/toben.archer/AppData/Local/Temp/BOCM/"
+#if not os.path.isdir(tempdir):
+#    os.mkdir(tempdir)
 
 class LogFile(ttk.Frame):
-    def __init__(self,master,con,log,addr,frame,filterFrame):
+    def __init__(self,master,filterFrame,con,log,addr,tempdir):
         ttk.Frame.__init__(self,master)
-        log = self.preProcess(log)
+        self.master = master
+        self.filterFrame = filterFrame
         self.con = con
-        self.log = log
-        self.name = log[log.rfind("/")+1:]
-        self.dbname = self.name[:self.name.find(".")]
-        self.dbname = self.dbname[:self.name.find("-")]
-        self.dbname = addr[:addr.find("-")] + "_" + self.dbname + str(random.randint(0,1000))
-        self.sftp = con.open_sftp()
-        self.file = self.sftp.open(log)
+        self.log = self.preProcess(log)
         self.addr = addr
+        self.tempdir = tempdir.name
+        
         self.vis = False
         self.tail = ""
         self.lines = []
         self.progress = 0.0
         self.new_lines = []
-        self.frame = frame
-        self.filterFrame = filterFrame
-
-        self.disp_tree = ttk.Treeview(frame)
-        self.s = ttk.Scrollbar(frame,orient='vertical', command=self.disp_tree.yview)
-        self.disp_tree.configure(yscroll=self.s.set)
-        self.disp_tree.heading('#0', text=addr, anchor='w')
-
-
-        self.filters = ttk.Treeview(filterFrame)
-        self.scrollFilters = ttk.Scrollbar(filterFrame,orient='vertical',
-                                           command=self.filters.yview)
-        self.filters.configure(yscroll=self.scrollFilters.set)
-        self.filters.heading('#0', text='Filterss for: '+addr, anchor='w')
-        
         self.updater = None
 
+        self.__makeConnection()
+        self.__makeGUI()
+        self.__makeName()
+        self.__makeDB()
+
+    def __makeConnection(self):
+        self.sftp = self.con.open_sftp()
+        self.file = self.sftp.open(self.log)
+
+    def __makeGUI(self):
+        self.disp_tree = ttk.Treeview(self.master)
+        self.s = ttk.Scrollbar(self.master,orient='vertical', command=self.disp_tree.yview)
+        self.disp_tree.configure(yscroll=self.s.set)
+        self.disp_tree.heading('#0', text=self.addr, anchor='w')
+
+        self.filters = ttk.Treeview(self.filterFrame)
+        self.scrollFilters = ttk.Scrollbar(self.filterFrame,orient='vertical',
+                                           command=self.filters.yview)
+        self.filters.configure(yscroll=self.scrollFilters.set)
+        self.filters.heading('#0', text='Filterss for: '+self.addr, anchor='w')
+
+    def __makeName(self):
+        self.name = self.log[self.log.rfind("/")+1:]
+        self.dbname = self.name[:self.name.find(".")]
+        self.dbname = self.dbname[:self.name.find("-")]
+        self.dbname = self.addr[:self.addr.find("-")] + "_" + self.dbname + str(random.randint(0,1000))
+
+
+    def __makeDB(self):
         self.logDB = self.getDBHandle()
         cur = self.logDB.cursor()
         com = "CREATE TABLE {0} (line text)".format(self.dbname)
         cur.execute(com)
         self.logDB.commit()
-
         
 
     def getDBHandle(self):
-        tf = tempdir + self.dbname
+        tf = self.tempdir + "\\" + self.addr + " - " + self.log[self.log.rfind("/")+1:]
         print(tf)
         con = sqlite3.connect(tf)
         return con
@@ -69,19 +78,22 @@ class LogFile(ttk.Frame):
         #print(val)
         return val
 
-    def update(self):
-        if not self.updater:
-            self.updater = threading.Thread(name=self.getName()+"updater",target=self.__populate)
-            self.updater.start()
-        if not self.updater.is_alive():
-            print(len(self.new_lines))
-            for i in self.new_lines:
-                self.disp_tree.insert('','end',text=i)
-            self.new_lines = []
-            self.updater = threading.Thread(name=self.getName()+"updater",target=self.__populate)
-            self.updater.start()
-        else:
-            return False
+    def update(self,update_num=1000):
+        i = update_num
+        while i > 0 and len(self.new_lines):
+            self.disp_tree.insert('','end',text=self.new_lines.pop())
+            i -= 1
+
+##        if not self.updater.is_alive():
+##            print(len(self.new_lines))
+##            for i in self.new_lines:
+##                self.disp_tree.insert('','end',text=i)
+##            self.new_lines = []
+##            self.updater = threading.Thread(name=self.getName()+"updater",target=self.__populate)
+##            self.updater.start()
+##        else:
+##            return False
+        
         
     def __populate(self):
         values = str(self.file.read(65535),'utf-8')
@@ -110,7 +122,7 @@ class LogFile(ttk.Frame):
                 print(self.progress*100,len(self.new_lines))
                 per += 0.1
 
-            if len(self.new_lines)> 5000: break
+            #if len(self.new_lines)> 100000: break
 
         self.tail += values
 
@@ -141,6 +153,10 @@ class LogFile(ttk.Frame):
         return getName()
 
     def setVisible(self,state=True):
+        if not self.updater:
+            self.updater = threading.Thread(name=self.getName()+"updater",target=self.__populate)
+            self.updater.start()
+            
         if state:
             if not self.vis:
                 self.s.pack(side='right',fill=BOTH)

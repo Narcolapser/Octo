@@ -8,9 +8,8 @@ import threading
 import time
 import queue
 import os
+import tempfile
 
-#def logLoader(val):
-#    val[0].disp_tree.insert('','end',text=val[1])
 
 def itemClicked(val):
     pass    
@@ -29,7 +28,7 @@ def connectToAddr():
     tree.tag_bind('clicky','<ButtonRelease-1>',itemClicked)
     for log in config['logs']:
         try:
-            logf = LogFile(frame,con,log,server_addr.get(),frame,filterFrame)
+            logf = LogFile(frame,filterFrame,con,log,server_addr.get(),tempdir)
             log_files[logf.getName()] = logf
             tree.insert(server_addr.get(),'end',server_addr.get()+log,text=logf.name,
                         values=logf.getName(),tags=('selected'))
@@ -43,7 +42,9 @@ def logSelected(val):
     logf = log_files[item['values'][0]]
     for i in log_files.keys():
         log_files[i].setVisible(False)
-    logf.update()
+
+    #logf.update()
+
     logf.setVisible()
 
 def connectBar(parent):
@@ -126,15 +127,25 @@ def clipboard_copy(val):
         print(e)
         return
 
+
+def update_logs():
+    #print("I'm idle!")
+
+    for l in log_files.keys():
+        #print(l)
+        log_files[l].update()
     
+    root.after(100,update_logs)
 
 config = json.load(open("dev.config"))
 root = Tk()
 
-server_addr = StringVar(master=root)#value=config['hosts'][0])
+server_addr = StringVar(master=root)
 filter_entry = StringVar(master=root, value="enter new filters here")
 connections = {}
 log_files = {}
+tempdir = tempfile.TemporaryDirectory()
+
 
 content = ttk.Frame(root, padding=(3,3,12,12))
 frame = ttk.Frame(content, width=600, height=600)
@@ -159,5 +170,6 @@ filterEntry(filterFrame)
 
 root.bind_all('<Control-Key-c>',clipboard_copy)
 
+root.after(100,update_logs)
 
-root.mainloop()
+print("ended!")
