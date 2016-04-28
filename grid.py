@@ -110,11 +110,13 @@ def filterEntry(parent):
 
     inframe = ttk.Frame(topFrame)
     addButton = ttk.Button(inframe, text="Add",command=insertFilter)
-    delButton = ttk.Button(inframe, text="Remove",command=insertFilter)
+    delButton = ttk.Button(inframe, text="Remove",command=removeFilter)
+    refButton = ttk.Button(inframe, text="Refresh",command=refreshFilters)
     namelbl = ttk.Label(inframe, text="Filter Entry")
     namelbl.pack(side="left",fill=BOTH)
     addButton.pack(side="right",fill=BOTH)
     delButton.pack(side="right",fill=BOTH)
+    refButton.pack(side="right",fill=BOTH)
     inframe.pack(side="top",fill=BOTH)
 
     name = ttk.Entry(topFrame,textvariable=filter_entry)
@@ -127,6 +129,24 @@ def insertFilter():
     try:
         logf = log_files[item['values'][0]]
         logf.addFilter(filter_entry.get())
+    except Exception as e:
+        print(e)
+
+def removeFilter():
+    item = tree.item(tree.focus())
+    try:
+        logf = log_files[item['values'][0]]
+        removeFilter(fstring)
+        #logf.addFilter(filter_entry.get())
+    except Exception as e:
+        print(e)
+
+def refreshFilters():
+    item = tree.item(tree.focus())
+    try:
+        logf = log_files[item['values'][0]]
+        logf.refilter()
+        #logf.addFilter(filter_entry.get())
     except Exception as e:
         print(e)
 

@@ -28,6 +28,7 @@ class LogFile(ttk.Frame):
         self.updater = None
         self.alive = True
         self.has_new = False
+        self.command = "SELECT * FROM lines WHERE ID > {0}"
         
         self.__makeConnection()
         self.__makeGUI()
@@ -79,12 +80,12 @@ class LogFile(ttk.Frame):
             val = val.format(date=time.strftime("%Y-%m-%d",time.gmtime()))
         return val
 
-    def update(self,update_num=100):
+    def update(self,update_num=1000):
         i = update_num
         if self.has_new:
             if self.db_lock.acquire(timeout=0.01):
                 self.update_cur = self.logDB.cursor()
-                com = "SELECT * FROM lines WHERE ID > {0}".format(self.lastAdded)
+                com = self.command.format(self.lastAdded)
                 self.update_cur.execute(com)
 
                 row = self.update_cur.fetchone()
@@ -180,17 +181,42 @@ class LogFile(ttk.Frame):
     def addFilter(self,fstring):
         print("adding filter!")
         self.filters.insert('','end',text=fstring)
-        self.refilter()
+        #self.refilter()
+
+    def removeFilter(self,fstring):
+        print("removing filter!")
+        self.filters.insert('','end',text=fstring)
+        #self.refilter()
 
     def refilter(self):
-        children = self.disp_tree.get_children()
-        for child_id in children:
-            child = self.disp_tree.item(child_id)
-            for f in self.filters.get_children():
-                fil = self.filters.item(f)
-                if fil['text'] in child['text']:
-                    self.disp_tree.delete(child_id)
-                    break
+        filters = []
+        for f in self.filters.get_children():
+            filters.append(self.filters.item(f)['text'])
+
+        if len(filters):
+            wheres = " AND ".join(filters)
+            self.command = "SELECT * FROM lines WHERE ID > {0} AND " + wheres
+
+        else:
+            self.command = "SELECT * FROM lines WHERE ID > {0}"
+
+
+        self.s.pack_forget()
+        self.disp_tree.pack_forget()
+        del self.s
+        del self.disp_tree
+        
+        self.disp_tree = ttk.Treeview(self.master)
+        self.s = ttk.Scrollbar(self.master,orient='vertical', command=self.disp_tree.yview)
+        self.disp_tree.configure(yscroll=self.s.set)
+        self.disp_tree.heading('#0', text=self.addr, anchor='w')
+
+        self.db_lock.acquire()
+        self.lastAdded = 0
+        self.db_lock.release()
+
+        print(self.command)
+
 
     def check_line(self,val):
         quickToggle = True
