@@ -27,6 +27,7 @@ class LogFile(ttk.Frame):
         self.lastAdded = 0
         self.updater = None
         self.alive = True
+        self.has_new = False
         
         self.__makeConnection()
         self.__makeGUI()
@@ -63,8 +64,9 @@ class LogFile(ttk.Frame):
         cur.execute(com)
         self.logDB.commit()
 
-        self.update_cur = cur
-        
+        #self.update_cur = cur
+        self.update_cur = None
+        self.db_lock = threading.Lock()
 
     def getDBHandle(self):
         tf = self.tempdir + "\\" + self.addr + " - " + self.log[self.log.rfind("/")+1:]
@@ -73,23 +75,30 @@ class LogFile(ttk.Frame):
         return con
 
     def preProcess(self,val):
-        if "<date>" in val:
-            val = val.replace("<date>",time.strftime("%Y-%m-%d",time.gmtime()))
+        if "{date}" in val:
+            val = val.format(date=time.strftime("%Y-%m-%d",time.gmtime()))
         return val
 
     def update(self,update_num=100):
         i = update_num
-        row = self.update_cur.fetchone()
-        while i > 0 and row:
-            self.lastAdded = row[0]
-            self.disp_tree.insert('','end',text=row[1])
-            i -= 1
-            row = self.update_cur.fetchone()
+        if self.has_new:
+            if self.db_lock.acquire(timeout=0.01):
+                self.update_cur = self.logDB.cursor()
+                com = "SELECT * FROM lines WHERE ID > {0}".format(self.lastAdded)
+                self.update_cur.execute(com)
 
-        if not row:
-            com = "SELECT * FROM lines WHERE ID > {0}".format(self.lastAdded)
-            self.update_cur.execute(com)
-            
+                row = self.update_cur.fetchone()
+                while i > 0 and row:
+                    self.lastAdded = row[0]
+                    self.disp_tree.insert('','end',text=row[1])
+                    i -= 1
+                    row = self.update_cur.fetchone()
+
+                if not row:
+                    self.has_new = False
+
+                self.update_cur.close()
+                self.db_lock.release()
         
     def __populate(self):
         values = str(self.file.read(65535),'utf-8')
@@ -132,10 +141,14 @@ class LogFile(ttk.Frame):
                 cur.execute(inserts,(self.numRows,line))
             for i in range(10):
                 try:
+                    self.db_lock.acquire(timeout=5)
                     upDB.commit()
+                    self.has_new = True
+                    self.db_lock.release()
                     break
                 except Exception as e:
                     print("failed to commit to {1} on try {0}: ".format(i,self.dbname),e)
+                    print(len(lines))
             
 
     def getName(self):

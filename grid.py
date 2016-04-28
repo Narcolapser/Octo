@@ -26,6 +26,7 @@ def connectToAddr():
     connections[name]=con
     tree.insert('','end',server_addr.get(),text=name,value=con,tags=('clicky','simple'))
     tree.tag_bind('clicky','<ButtonRelease-1>',itemClicked)
+    #sftp = con.open_sftp()
 
     logs = []
     
@@ -33,6 +34,7 @@ def connectToAddr():
         logs.append(resolve_log(con,log))
     
     for log in logs:
+        print("log: ",log[0])
         try:
             logf = LogFile(frame,filterFrame,con,log[0],server_addr.get(),tempdir)
             log_files[logf.getName()] = logf
@@ -49,11 +51,11 @@ def connectToAddr():
 ##                    print(sub_log)
 ##                    logf = LogFile(frame,filterFrame,con,sub_log,server_addr.get(),tempdir)
 ##                    log_files[logf.getName()] = logf
-##                    tree.insert(parent,'end',server_addr.get()+log[0],text=logf.name,
+##                    tree.insert(parent,'end',server_addr.get()+sub_log,text=logf.name,
 ##                            values=logf.getName(),tags=('selected'))
 ##                    tree.tag_bind('selected','<ButtonRelease-1>',logSelected)
 ##                except Exception as e:
-##                    print("FAILURE!")
+##                    print("FAILURE!",e)
         
 
 def resolve_log(con,log):
