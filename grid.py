@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from logfile import LogFile
+from logback import LogBack
 
 import paramiko
 import json
@@ -86,8 +87,25 @@ def itemClicked(val):
     popup.tk_popup(val.x_root,val.y_root,0)
 
 def log_config_window(val=None):
-    item = tree.item(tree.selection())
-    print(item)
+    item = tree.item(tree.selection()[0])
+    #print(item)
+    name = tree.selection()[0]
+    name = name[:name.find('.')]
+    #print(name)
+    lcw = Toplevel()
+    lcw.title("Logging configuration")
+    #/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml
+    con = connections[name]
+    #print(con)
+#    sftp = con.open_sftp()
+    #config_file = sftp.open("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml")
+    #conString = config_file.read()
+    #print(conString)
+    log = LogBack(con)
+    for i in log.loggers: print(i)
+    
+    
+    
 
 def connectBar(parent):
     topFrame = ttk.Frame(parent)
@@ -208,6 +226,7 @@ server_addr = StringVar(master=root)
 filter_entry = StringVar(master=root, value="enter new filters here")
 connections = {}
 log_files = {}
+log_back = {}
 tempdir = tempfile.TemporaryDirectory()
 
 
