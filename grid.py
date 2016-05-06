@@ -10,22 +10,19 @@ import queue
 import os
 import tempfile
 
-
-def itemClicked(val):
-    pass    
-
 def connectToAddr():
     con = paramiko.SSHClient()
     con.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    print(server_addr.get())
+    #print(server_addr.get())
     con.connect(server_addr.get(),username=config['auth']['username'],
                 password=config['auth']['password'])
     
     name = server_addr.get()
     name = name[:name.find('.')]
     connections[name]=con
+    #print("name: ", name)
     tree.insert('','end',server_addr.get(),text=name,value=con,tags=('clicky','simple'))
-    tree.tag_bind('clicky','<ButtonRelease-1>',itemClicked)
+    tree.tag_bind('clicky','<ButtonRelease-3>',itemClicked)
     #sftp = con.open_sftp()
 
     logs = []
@@ -34,7 +31,7 @@ def connectToAddr():
         logs.append(resolve_log(con,log))
     
     for log in logs:
-        print("log: ",log[0])
+        #print("log: ",log[0])
         try:
             logf = LogFile(frame,filterFrame,con,log[0],server_addr.get(),tempdir)
             log_files[logf.getName()] = logf
@@ -75,7 +72,6 @@ def resolve_log(con,log):
     
 def logSelected(val):
     item = tree.item(tree.focus())
-
     logf = log_files[item['values'][0]]
     for i in log_files.keys():
         log_files[i].setVisible(False)
@@ -83,6 +79,15 @@ def logSelected(val):
     #logf.update()
 
     logf.setVisible()
+
+def itemClicked(val):
+    item = tree.item(tree.identify_row(val.y))
+    tree.selection_set(tree.identify_row(val.y))
+    popup.tk_popup(val.x_root,val.y_root,0)
+
+def log_config_window(val=None):
+    item = tree.item(tree.selection())
+    print(item)
 
 def connectBar(parent):
     topFrame = ttk.Frame(parent)
@@ -137,7 +142,6 @@ def removeFilter():
     try:
         logf = log_files[item['values'][0]]
         removeFilter(fstring)
-        #logf.addFilter(filter_entry.get())
     except Exception as e:
         print(e)
 
@@ -146,14 +150,12 @@ def refreshFilters():
     try:
         logf = log_files[item['values'][0]]
         logf.refilter()
-        #logf.addFilter(filter_entry.get())
     except Exception as e:
         print(e)
 
 def downloadFiles():
     logs = []
     sel = tree.selection()
-    
 
     for i in sel:
         try:
@@ -196,6 +198,11 @@ def update_logs():
 
 config = json.load(open("dev.config"))
 root = Tk()
+root.title("Bookish Octo-Computing Machine")
+r_click_selection = None
+
+popup = Menu(root,tearoff=0)
+popup.add_command(label="Configure Logs",command=log_config_window)
 
 server_addr = StringVar(master=root)
 filter_entry = StringVar(master=root, value="enter new filters here")
