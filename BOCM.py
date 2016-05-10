@@ -22,7 +22,7 @@ def connectToAddr():
     name = name[:name.find('.')]
     connections[name]=con
     #print("name: ", name)
-    tree.insert('','end',server_addr.get(),text=name,value=con,tags=('clicky','simple'))
+    tree.insert('','end',server_addr.get(),text=name,value=('',con),tags=('clicky','simple'))
     tree.tag_bind('clicky','<ButtonRelease-3>',itemClicked)
     #sftp = con.open_sftp()
 
@@ -37,7 +37,8 @@ def connectToAddr():
             logf = LogFile(frame,filterFrame,con,log[0],server_addr.get(),tempdir)
             log_files[logf.getName()] = logf
             parent = tree.insert(server_addr.get(),'end',server_addr.get()+log[0],text=logf.name,
-                        values=logf.getName(),tags=('selected'))
+                        values=(logf.lastEdit,logf.getName()),tags=('selected'))
+            #tree.set(parent,'updated',)
             tree.tag_bind('selected','<ButtonRelease-1>',logSelected)
         except Exception as e:
             print("woopies! something went wrong with main log: ",e)
@@ -54,7 +55,6 @@ def connectToAddr():
 ##                    tree.tag_bind('selected','<ButtonRelease-1>',logSelected)
 ##                except Exception as e:
 ##                    print("FAILURE!",e)
-        
 
 def resolve_log(con,log):
     #print(log)
@@ -73,7 +73,7 @@ def resolve_log(con,log):
     
 def logSelected(val):
     item = tree.item(tree.focus())
-    logf = log_files[item['values'][0]]
+    logf = log_files[item['values'][1]]
     for i in log_files.keys():
         log_files[i].setVisible(False)
 
@@ -150,7 +150,7 @@ def filterEntry(parent):
 def insertFilter():
     item = tree.item(tree.focus())
     try:
-        logf = log_files[item['values'][0]]
+        logf = log_files[item['values'][1]]
         logf.addFilter(filter_entry.get())
     except Exception as e:
         print(e)
@@ -158,7 +158,7 @@ def insertFilter():
 def removeFilter():
     item = tree.item(tree.focus())
     try:
-        logf = log_files[item['values'][0]]
+        logf = log_files[item['values'][1]]
         logf.removeFilter()
     except Exception as e:
         print(e)
@@ -166,7 +166,7 @@ def removeFilter():
 def refreshFilters():
     item = tree.item(tree.focus())
     try:
-        logf = log_files[item['values'][0]]
+        logf = log_files[item['values'][1]]
         logf.refilter()
     except Exception as e:
         print(e)
@@ -178,7 +178,7 @@ def downloadFiles():
     for i in sel:
         try:
             item = tree.item(i)
-            logs.append(log_files[item['values'][0]])
+            logs.append(log_files[item['values'][1]])
         except Exception as e:
             print(e)
 
@@ -195,7 +195,7 @@ def clipboard_copy(val):
     item = tree.item(tree.focus())
 
     try:
-        logf = log_files[item['values'][0]]
+        logf = log_files[item['values'][1]]
         clip = logf.selected_values()
         root.clipboard_clear()
         root.clipboard_append(clip)
@@ -242,6 +242,12 @@ connectBar(frameLeft)
 
 tree = ttk.Treeview(frameLeft)
 tree.pack(side="top",fill=BOTH, expand=1)
+tree['columns'] = ('updated',)#'fnames',
+#tree.column('fnames',width=200,anchor='e')
+#tree.column('con',width=0)
+tree.column('updated',width=100,anchor='center')
+#tree.heading('fnames', text='Server and file list')
+tree.heading('updated', text='Last updated')
 
 dlbutton = ttk.Button(frameLeft, text="Download!", command=downloadFiles)
 dlbutton.pack(side="top",fill=X)

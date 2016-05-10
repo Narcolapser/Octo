@@ -38,6 +38,11 @@ class LogFile(ttk.Frame):
     def __makeConnection(self):
         self.sftp = self.con.open_sftp()
         self.file = self.sftp.open(self.log)
+        self.lastEdit = self.sftp.stat(self.log)
+        self.lastEdit = time.localtime(self.lastEdit.st_mtime)
+        self.lastEdit = time.strftime("%Y-%m-%d",self.lastEdit)
+        #print(self.lastEdit)
+        #print(dir(self.lastEdit))
 
     def __makeGUI(self):
         self.disp_tree = ttk.Treeview(self.master)
@@ -122,9 +127,7 @@ class LogFile(ttk.Frame):
                 size = fstats.st_size
                 loc = self.file.tell()
                 self.progress = loc/(size*1.0)
-
-                #print("we are {0}% through {1}.".format(self.progress*100,self.log))
-
+                
             self.tail += values
             time.sleep(60)
 
@@ -159,12 +162,12 @@ class LogFile(ttk.Frame):
     def __name__(self):
         return getName()
 
-    def setVisible(self,state=True):
-        if not self.updater:
-            self.updater = threading.Thread(name=self.getName()+"updater",target=self.__populate)
-            self.updater.start()
-            
+    def setVisible(self,state=True):            
         if state:
+            if not self.updater:
+                self.updater = threading.Thread(name=self.getName()+"updater",target=self.__populate)
+                self.updater.start()
+
             if not self.vis:
                 self.s.pack(side='right',fill=BOTH)
                 self.disp_tree.pack(side='top',fill=BOTH,expand=1)
@@ -183,9 +186,12 @@ class LogFile(ttk.Frame):
         self.filters.insert('','end',text=fstring)
         #self.refilter()
 
-    def removeFilter(self,fstring):
+    def removeFilter(self):
         print("removing filter!")
-        self.filters.insert('','end',text=fstring)
+        filters = self.filters.selection()
+        for fil in filters:
+            self.filters.delete(fil)
+        #self.filters.insert('','end',text=fstring)
         #self.refilter()
 
     def refilter(self):
@@ -200,41 +206,17 @@ class LogFile(ttk.Frame):
         else:
             self.command = "SELECT * FROM lines WHERE ID > {0}"
 
-
-        self.s.pack_forget()
-        self.disp_tree.pack_forget()
-        del self.s
-        del self.disp_tree
         
-        self.disp_tree = ttk.Treeview(self.master)
-        self.s = ttk.Scrollbar(self.master,orient='vertical', command=self.disp_tree.yview)
-        self.disp_tree.configure(yscroll=self.s.set)
-        self.disp_tree.heading('#0', text=self.addr, anchor='w')
+        for i in self.disp_tree.get_children():
+            self.disp_tree.delete(i)
 
         self.db_lock.acquire()
         self.lastAdded = 0
         self.db_lock.release()
 
         print(self.command)
-
-
-    def check_line(self,val):
-        quickToggle = True
-        for f in self.filters.get_children():
-            fil = self.filters.item(f)
-            if fil['text'] in val:
-                return False
-        if "INFO" in val[:4]:
-            return quickToggle
-        if "DEBUG" == val[:5]:
-            return quickToggle
-        if "TRACE" == val[:5]:
-            return quickToggle
-        if "ERROR" == val[:5]:
-            return quickToggle
-        if "WARN" == val[:4]:
-            return quickToggle
-        return not quickToggle
+        self.update()
+        self.has_new = True
 
     def download(self,path):
         sftp = self.con.open_sftp()
