@@ -10,6 +10,7 @@ import time
 import queue
 import os
 import tempfile
+import sys
 
 def connectToAddr():
     con = paramiko.SSHClient()
@@ -262,3 +263,8 @@ filterEntry(filterFrame)
 root.bind_all('<Control-Key-c>',clipboard_copy)
 
 root.after(100,update_logs)
+
+if "idlelib" in sys.modules:
+    print("And we are in Idle")
+else:
+    print("Did you finally get double clicking to work?")
