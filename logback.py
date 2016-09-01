@@ -1,80 +1,215 @@
-class LogBack:
-    def __init__(self,con):
-        self.con = con
-        self.sftp = self.con.open_sftp()
-        self.config_file = self.sftp.open("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml")
-        self.conString = self.config_file.read()
-        self.conString = str(self.conString,"utf8")
-##        self.conString = conString
-        self.loggers = []
-        i = 0
-        while i < len(self.conString):
-            start = self.conString.find("<logger",i)
-            end = self.conString.find("</logger>",start) + len("</logger>")
-            if i > end+1:
-                break
-            else:
-                i = end+1
-            print(i)
-            log_string = self.conString[start:end]
-            self.loggers.append(Logger(log_string))
-
-
-class Logger:
+class Logback:
     def __init__(self,val):
-        self.val = val
-        start = val.find('name="')+len('name="')
-        self.name = val[start:val.find('"',start)]
-        start = val.find('additivity="')+len('additivity="')
-        self.additivity = val[start:val.find('"',start)]
-        start = val.find('level="')+len('level="')
-        self.level = val[start:val.find('"',start)]
-        start = val.find('appender-ref ref="')+len('appender-ref ref="')
-        self.appender = val[start:val.find('"',start)]
+        self.content_string = val
+        self.start = val.find("<configuration") + 1
+        content_start = val.find(">",self.start) + 1
+        self.end = val.find("</configuration>")
+
+        scanstart = val.find("scan=",self.start) + 6
+        scanend = val.find('"',scanstart)
+        self.scan = bool(val[scanstart:scanend])
+
+        scanstart = val.find("scanPeriod=",self.start) + 12
+        scanend = val.find(' ',scanstart)
+        self.scanPeriod = int(val[scanstart:scanend])
+
+        self.contextName = self.getThing("contextName")
+        self.contextListener = self.getThing("contextListener")
+        self.jmxConfigurator = self.getJMX()
+
+        self.appenders = []
+        a = self.getThing("appender")
+        while a:
+            self.appenders.append(Appender(a))
+            
+            a = self.getThing("appender",self.lastend)
+
+        self.root = self.getThing("root")
+
+        self.loggers = []
+        openComment = val.find("<!--",self.lastend)
+        closeComment = val.find("-->",openComment) + 3
+        nextComment = val.find("<!--",closeComment)
+        l = self.getThing("logger",self.lastend)
+        commented = False
+        section = None
+        while l:
+            while self.lastend > nextComment:
+                openComment = nextComment
+                closeComment = val.find("-->",openComment) + 3
+                nextComment = val.find("<!--",closeComment)
+
+            if self.lastend < closeComment:
+                commented = True
+                if val[openComment:self.laststart].count('\n') == 1:
+                    secEnd = val.find("\n",openComment)
+                    section = val[openComment+5:secEnd]
+            else:
+                commented = False
+                if self.laststart > closeComment:
+                    section = val[openComment+5:closeComment-4]
+                else:
+                    pass
+            
+            logger = Logger(l,commented,section)
+            self.loggers.append(logger)
+            templastend = self.lastend
+            l = self.getThing("logger",self.lastend)
+
+        #now we need to find the tiny loggers at the end.
+        
+        ll = val.find("<logger ",templastend)
+        llend = val.find("/>",ll)+2
+        while ll != -1:
+            while llend > nextComment:
+                openComment = nextComment
+                closeComment = val.find("-->",openComment) + 3
+                nextComment = val.find("<!--",closeComment)
+                if nextComment == -1:
+                    nextComment = self.end
+
+            if llend < closeComment:
+                commented = True
+                if val[openComment:llend].count('\n') < 3:
+                    secEnd = val.find("\n",openComment)
+                    section = val[openComment+5:secEnd]
+            else:
+                commented = False
+                if ll > closeComment:
+                    section = val[openComment+5:closeComment-4]
+                else:
+                    pass
+
+            l = val[ll:llend]
+
+            logger = Logger(l,commented,section)
+            self.loggers.append(logger)
+            ll = val.find("<logger ",llend)
+            llend = val.find("/>",ll)+2
+
+    def getThing(self,thing,start_val = 0):
+        val = self.content_string
+        start = val.find(thing,start_val)
+        if start == -1:
+            print("nothing found. ")
+            return start
+        start -= 1
+        while val[start] != '\n':
+            start -= 1
+        start += 1
+        end = val.find("</"+thing+">",start) + len("</"+thing+">")
+        self.laststart = start
+        self.lastend = end + 1
+        #print(val[start:end])#,start,end)
+        return val[start:end]
+
+    def getJMX(self):
+        if self.content_string.find("  <jmxConfigurator />") == -1:
+            return None
+        else:
+            return "  <jmxConfigurator />"
 
     def __str__(self):
-        return '  <logger name="{0}" additivity="{1}" level="{2}">\n    <appender-ref ref="{3}"/>\n  </logger>'.format(self.name,self.additivity,self.level,self.appender)
+        outs = '<?xml version="1.0" encoding="UTF-8"?>\n<!-- this had been generated by Octo. You will have to re-deploy to get the original back-->\n'
+        outs += '<configuration scan="{0}" scanPeriod="{1}">\n\n'.format(self.scan,self.scanPeriod)
 
-def recursiveParse(val):
-    tag_opening = val.find("<")
-    if val[tag_opening:tag_opening+4] == "<!--":
-        print("comment!")
+        outs += self.contextName + '\n\n'
 
-example_val = """  <appender name="PORTAL" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <!--See http://logback.qos.ch/manual/appenders.html#RollingFileAppender-->
-    <!--and http://logback.qos.ch/manual/appenders.html#TimeBasedRollingPolicy-->
-    <!--for further documentation-->
-    <File>${catalina.base}/logs/portal/portal.log</File>
+        outs += self.contextListener + '\n\n'
+
+        outs += self.jmxConfigurator + '\n\n'
+
+        for appender in self.appenders:
+            outs += str(appender)
+
+        outs += '\n' + self.root + '\n'
+
+        for logger in self.loggers:
+            outs += str(logger)
+
+        outs += '\n</configuration>'
+        return outs
+
+class Appender:
+    def __init__(self,val):
+        self.content_string = val
+        self.name = val[val.find('name=')+6:val.find('" c')]
+        self.xclass = val[val.find('class=')+7:val.find('">')]
+        self.file = val[val.find('<File>')+6:val.find('</File>')]
+        self.encoder = val[val.find('<pattern>')+9:val.find('</pattern>')]
+        temp = val.find('<rollingPolicy class=')
+        self.rollingPolicyClass = val[temp+22:val.find('">',temp)]
+        self.rollingPolicyFile = val[val.find('<fileNamePattern>')+17:val.find('</fileNamePattern>')]
+
+    def __str__(self):
+        appendstr = """
+  <appender name="{0}" class="{1}">
+    <File>{2}</File>
     <encoder>
-      <pattern>%-5level [%thread] %logger{36} %d{ISO8601} - %msg%n</pattern>
+      <pattern>{3}</pattern>
     </encoder>
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <fileNamePattern>${catalina.base}/logs/portal/portal.log.%d{yyyy-MM-dd}</fileNamePattern>
+    <rollingPolicy class="{4}">
+      <fileNamePattern>{5}</fileNamePattern>
     </rollingPolicy>
   </appender>
+  """
+        outs = appendstr.format(self.name,self.xclass,self.file,self.encoder,self.rollingPolicyClass,self.rollingPolicyFile)
+
+        return outs
+
+class Logger:
+    def __init__(self,val,commented,section):
+        self.content_string = val
+        self.commented = commented
+        self.section = section
+        while self.section[0] == ' ':
+            self.section = self.section[1:]
+
+        self.name = self.getXat("name")
+        self.additivity = self.getXat("additivity")
+        self.level = self.getXat("level")
+
+        if val.find("appender-ref") != -1:
+            self.appender = self.getXat(" ref")
+        else:
+            self.appender = None
+
+        #print(self.section)
+
+    def __str__(self):
+        wref = """
+  <!-- {0} -->
+  {5}<logger name="{1}" additivity="{2}" level="{3}">
+    <appender-ref ref="{4}"/>
+  </logger>{6}
+  """
+        oref = """
+  <!-- {0} {4}-->
+  {5}<logger name="{1}" additivity="{2}" level="{3}"/>{6}
 """
+        if self.appender:
+            ret = wref
+            app = self.appender
+        else:
+            ret = oref
+            app = ""
 
-com_val = " <!-- blarg! -->"
+        if self.commented:
+            o = "<!--"
+            c = "-->"
+        else:
+            o = ""
+            c = ""
+        return ret.format(self.section,self.name,self.additivity,self.level,app,o,c)
+        
 
-logger_val = """
-  <root level="INFO">
-    <appender-ref ref="PORTAL"/>
-  </root>
+    def getXat(self,foo):
+        val = self.content_string
+        start = val.find(foo)+len(foo)+2
+        end = val.find('"',start+1)
+        return val[start:end]
 
-  <!-- Log use of the identity and attribute swapper -->
-  <logger name="org.jasig.portal.portlets.swapper" additivity="false" level="INFO">
-    <appender-ref ref="SWAPPER"/>
-  </logger>
-
-  <!--  Portal Event aggregation -->
-  <logger name="org.jasig.portal.events" additivity="false" level="INFO">
-    <appender-ref ref="EVENT"/>
-  </logger>
-
-  <!--  Portal Tin Can Events -->
-  <logger name="org.jasig.portal.events.tincan.providers.LogEventTinCanAPIProvider" additivity="false" level="DEBUG">
-    <appender-ref ref="TINCAN"/>
-  </logger>
-"""
-
-recursiveParse(com_val)
+f = open("logback.dev.xml","r")
+content_string = f.read()
+l = Logback(content_string)
+print(l)
