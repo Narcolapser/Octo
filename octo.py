@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from logfile import LogFile
-from logback import LogBack
+import logback
 
 import paramiko
 import json
@@ -98,15 +98,91 @@ def log_config_window(val=None):
     #/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml
     con = connections[name]
     #print(con)
-#    sftp = con.open_sftp()
-    #config_file = sftp.open("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml")
-    #conString = config_file.read()
+    sftp = con.open_sftp()
+    config_file = sftp.open("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml")
+    conString = config_file.read().decode("utf-8")
+    config_file.close()
     #print(conString)
-    log = LogBack(con)
-    for i in log.loggers: print(i)
+    #print(type(conString))
+    lb = logback.Logback(str(conString))
+    #print(lb)
+    lcw.lb = lb
+    lcw.lframes = []
+    lcw.con = con
+
+    for logger in lb.loggers:
+        lframe = log_frame(lcw,logger)
+        lframe.pack(side="top",fill=BOTH)
+        lcw.lframes.append(lframe)
+
+    cancel = ttk.Button(lcw,text='Close',command=lcw.destroy)
+    cancel.pack(side="right",fill=BOTH)
+
+    button = ttk.Button(lcw,text='Save',command=log_change)
+    button.pack(side="right",fill=BOTH)
+
+    root.lcw = lcw
     
+def log_change():
+    for lframe in root.lcw.lframes:
+        active = lframe.logActiveVar.get()
+
+        #this is flipped around because the GUI deals with "is active" while the file deals with
+        #"is commented out".... or maybe not....
+        if active == 'False':
+            lframe.logger.commented = False
+        else:
+            lframe.logger.commented = True
+
+        lframe.logger.level = lframe.logLevelVar.get()
+    print(root.lcw.lb)
     
+    con = root.lcw.con
+    sftp = con.open_sftp()
+    #config_file = sftp.open("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml",'w')
+    config_file = sftp.open("logback.xml",'w')
+    config_file.write(str(root.lcw.lb))
+    config_file.close()
+
+    if not root.lcw.lb.generated:
+        stdin, stdout, stderr = con.exec_command("sudo cp /usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml /usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml.bak", get_pty=True)
+        stdin.write(config['auth']['password']+"\n")
+        print(stdout.readlines())
+        print(stderr.readlines())
+    print(root.lcw.lb.generated)
     
+    stdin, stdout, stderr = con.exec_command("sudo cp logback.xml /usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml", get_pty=True)
+    stdin.write(config['auth']['password']+"\n")
+    stdin.flush()
+    print(stdout.readlines())
+    print(stderr.readlines())
+    
+
+def log_frame(parent,log):
+    topFrame = ttk.Frame(parent)
+    topFrame.logger = log
+
+    logLabel = ttk.Label(topFrame,text=log.name)
+#    if 'Sql' in log.name:
+#        log.commented = True
+    print(log.commented)
+    topFrame.logActiveVar = StringVar(master=topFrame,value=str(log.commented))
+    logActive = ttk.Checkbutton(topFrame,text="Activate.",
+                                variable=topFrame.logActiveVar,
+                                onvalue='False', offvalue='True')
+    
+    #print(logActive.selection_get())
+    #print(log.level)
+    topFrame.logLevelVar = StringVar(master=topFrame,value=log.level)
+    logLevel = ttk.Entry(topFrame,textvariable=topFrame.logLevelVar)
+
+    logLabel.pack(side="left",fill=BOTH)
+    logLevel.pack(side="right",fill=BOTH)
+    logActive.pack(side="right",fill=BOTH)
+
+    return topFrame
+
+
 
 def connectBar(parent):
     topFrame = ttk.Frame(parent)
@@ -217,9 +293,10 @@ def update_logs():
 
 config = json.load(open("dev.config"))
 root = Tk()
-root.title("Bookish Octo-Computing Machine")
+root.title("Octo")
 r_click_selection = None
 usefulbits = {}
+memoryleak = []
 
 
 popup = Menu(root,tearoff=0)
