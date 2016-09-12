@@ -1,0 +1,12 @@
+I look at the structure of Octo now and can help but think "WHAT HAVE I DONE?" Specificallyt he logfile structure. I have mixed Model and View together. ewh. That is going to take a fair bit of work to de-couple. To be fair it was the first time I ever made a GUI. 
+
+This has come to my attention as my endvour for having logback be editable has come to fruition. The problem is with the road map item:
+
+*	Keep logs up to date: no information from after you open the file for the first time gets pulled in.
+
+Fixing this might be tricky. Also, this item:
+
+*	Nest logs: there are instances of the same log for different days. I'd like to
+		nest these so they are all available, but still compact.
+
+It's troublesome because I can only have so many connections to the server open at one time. What I have to do is have some way of decoupling the actual reading at the connecting. If I store what has been read locally and then close the connection when not actively reading, or have some sort of pooling system where a connection is requested and then returned when not in use, I should be able to get around this limitied number of connections issue.

@@ -1,6 +1,8 @@
 from tkinter import *
 from tkinter import ttk
 
+import connection
+
 import paramiko
 import threading
 import sqlite3
@@ -17,6 +19,7 @@ class LogFile(ttk.Frame):
         self.log = self.preProcess(log)
         self.addr = addr
         self.tempdir = tempdir.name
+
         
         self.vis = False
         self.lines = []
@@ -29,6 +32,7 @@ class LogFile(ttk.Frame):
         self.alive = True
         self.has_new = False
         self.command = "SELECT * FROM lines WHERE ID > {0}"
+        self.local_pointer = 0
         
         self.__makeConnection()
         self.__makeGUI()
@@ -36,14 +40,15 @@ class LogFile(ttk.Frame):
         self.__makeDB()
 
     def __makeConnection(self):
-        self.sftp = self.con.open_sftp()
-        self.file = self.sftp.open(self.log)
-        self.lastEdit = self.sftp.stat(self.log)
-        self.lastEdit = time.localtime(self.lastEdit.st_mtime)
-        self.lastEdit = time.strftime("%Y-%m-%d",self.lastEdit)
-        #print(self.lastEdit)
-        #print(dir(self.lastEdit))
-
+##        self.sftp = self.con.open_sftp()
+##        self.file = self.sftp.open(self.log)
+        self.file = self.con.openFile(self.log)
+        
+##        self.lastEdit = self.sftp.stat(self.log)
+##        self.lastEdit = time.localtime(self.lastEdit.st_mtime)
+##        self.lastEdit = time.strftime("%Y-%m-%d",self.lastEdit)
+        self.lastEdit = self.file.lastEdit()
+        
     def __makeGUI(self):
         self.disp_tree = ttk.Treeview(self.master)
         self.s = ttk.Scrollbar(self.master,orient='vertical', command=self.disp_tree.yview)
@@ -108,6 +113,7 @@ class LogFile(ttk.Frame):
         
     def __populate(self):
         values = str(self.file.read(65535),'utf-8')
+        self.local_pointer += len(values)
         per = 0.1
         upDB = self.getDBHandle()
         cur = upDB.cursor()
@@ -122,14 +128,20 @@ class LogFile(ttk.Frame):
                 self.append_lines_db(lines,upDB,cur)
                 
                 values = str(self.file.read(65535),'utf-8')
+                self.local_pointer += len(values)
 
                 fstats = self.file.stat()
                 size = fstats.st_size
                 loc = self.file.tell()
                 self.progress = loc/(size*1.0)
-                
+
+            ##self.file.close()
+            ##self.sftp.close()
             self.tail += values
             time.sleep(60)
+            ##self.__makeConnection()
+        
+
 
     def append_lines(self,lines):
         for line in lines:
@@ -219,9 +231,10 @@ class LogFile(ttk.Frame):
         self.has_new = True
 
     def download(self,path):
-        sftp = self.con.open_sftp()
-        sftp.get(self.log,path+self.name)
-        sftp.close()
+##        sftp = self.con.open_sftp()
+##        sftp.get(self.log,path+self.name)
+##        sftp.close()
+        self.con.getFile(self.log,path+self.name)
 
     def selected_values(self):
         ret = []

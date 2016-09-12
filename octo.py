@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from logfile import LogFile
 import logback
+import connection
 
 import paramiko
 import json
@@ -13,14 +14,16 @@ import tempfile
 import sys
 
 def connectToAddr():
-    con = paramiko.SSHClient()
-    con.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    #print(server_addr.get())
-    con.connect(server_addr.get(),username=config['auth']['username'],
-                password=config['auth']['password'])
+##    con = paramiko.SSHClient()
+##    con.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+##    #print(server_addr.get())
+##    con.connect(server_addr.get(),username=config['auth']['username'],
+##                password=config['auth']['password'])
     
     name = server_addr.get()
     name = name[:name.find('.')]
+    con = connection.Connection(server_addr.get(),config['auth']['username'],
+                config['auth']['password'],name)
     connections[name]=con
     #print("name: ", name)
     tree.insert('','end',server_addr.get(),text=name,value=('',con),tags=('clicky','simple'))
@@ -42,6 +45,7 @@ def connectToAddr():
             #tree.set(parent,'updated',)
             tree.tag_bind('selected','<ButtonRelease-1>',logSelected)
         except Exception as e:
+            raise e
             print("woopies! something went wrong with main log: ",e)
             continue
 
@@ -98,8 +102,11 @@ def log_config_window(val=None):
     #/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml
     con = connections[name]
     #print(con)
-    sftp = con.open_sftp()
-    config_file = sftp.open("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml")
+
+    ##sftp = con.open_sftp()
+    ##config_file = sftp.open("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml")
+    config_file = con.openFile("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml")
+
     conString = config_file.read().decode("utf-8")
     config_file.close()
     #print(conString)
@@ -137,10 +144,15 @@ def log_change():
         lframe.logger.level = lframe.logLevelVar.get()
     print(root.lcw.lb)
     
+##    con = root.lcw.con
+##    sftp = con.open_sftp()
+##    #config_file = sftp.open("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml",'w')
+##    config_file = sftp.open("logback.xml",'w')
+##    config_file.write(str(root.lcw.lb))
+##    config_file.close()
+
     con = root.lcw.con
-    sftp = con.open_sftp()
-    #config_file = sftp.open("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml",'w')
-    config_file = sftp.open("logback.xml",'w')
+    config_file = con.openFile("logback.xml","w")
     config_file.write(str(root.lcw.lb))
     config_file.close()
 

@@ -1,0 +1,11 @@
+Ok. I'm taking the plunge. I'm going to start breaking up logfile. It's currently 242 lines without comments. I'm not opposed to larger classes, but 242 w/o comments is pretty intense. That's like a 500 line class with comments. And I think the more challenging thing is that LogFile does so many different things. A large class with a single focus isn't so bad. But a large class that is all over the place is a bit terrifying. So here are my thoughts as they stand right now:
+
+Firstly: I need to make a "Connection" class that manages all the connecting to a server. This will serve as a banker for sftp connections. In a way I already do this. There is a dictionary "connections" that houses the main ssh session. I'm just going to step in and put a wrapper in there that allows connections to be pooled properly. 
+Secondarily: I need to seperate the Model from the View. A bit challenging because there is multiple models here. There is the connection, The database, the log file, etc. Fortunately having the database already in place provides a nice break point already!
+
+Lastly: Comment the dickens out of this!
+
+One of these days I also need to reduce the amount of code in the "octo.py" file, perhaps make an Octo class. 
+
+
+
