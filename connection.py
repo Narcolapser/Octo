@@ -60,17 +60,23 @@ class ConFile():
         self.path = path
         self.parent = parent
 
-        self.sftp = parent.con.open_sftp()
-        self.file = self.sftp.open(path)
+        try:
+            self.sftp = parent.con.open_sftp()
+            self.file = self.sftp.open(path)
+        except:
+            print("file does not exist: {0}".format(path))
 
     def close(self):
         self.parent.__fClose()
 
     def lastEdit(self):
-        lastEdit = self.sftp.stat(self.path)
-        lastEdit = time.localtime(lastEdit.st_mtime)
-        lastEdit = time.strftime("%Y-%m-%d",lastEdit)
-        return lastEdit
+        try:
+            lastEdit = self.sftp.stat(self.path)
+            lastEdit = time.localtime(lastEdit.st_mtime)
+            lastEdit = time.strftime("%Y-%m-%d",lastEdit)
+            return lastEdit
+        except:
+            return None
 
     def read(self,amount):
         return self.file.read(amount)
