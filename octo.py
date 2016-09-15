@@ -1,3 +1,5 @@
+"""#!/c/Python34/python"""
+"""#!/usr/bin/python"""
 from tkinter import *
 from tkinter import ttk
 from logfile import LogFile
@@ -39,13 +41,15 @@ def connectToAddr():
         #print("log: ",log[0])
         try:
             logf = LogFile(frame,filterFrame,con,log[0],server_addr.get(),tempdir)
+            if not logf.checkExists():
+                print("Log file doesn't exist: ",log[0])
+                continue
             log_files[logf.getName()] = logf
             parent = tree.insert(server_addr.get(),'end',server_addr.get()+log[0],text=logf.name,
                         values=(logf.lastEdit,logf.getName()),tags=('selected'))
             #tree.set(parent,'updated',)
             tree.tag_bind('selected','<ButtonRelease-1>',logSelected)
         except Exception as e:
-            raise e
             print("woopies! something went wrong with main log: ",e)
             continue
 
@@ -356,4 +360,6 @@ root.after(100,update_logs)
 if "idlelib" in sys.modules:
     print("And we are in Idle")
 else:
-    print("Did you finally get double clicking to work?")
+    print("not debugging, real program! woohoo!")
+
+root.mainloop()

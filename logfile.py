@@ -243,3 +243,6 @@ class LogFile(ttk.Frame):
             ret.append(item['text'])
 
         return "\n".join(ret)
+
+    def checkExists(self):
+        return self.file.checkExists()
