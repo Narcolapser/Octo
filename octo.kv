@@ -2,19 +2,65 @@
 
 <Octo>:    
     do_default_tab: False
+    serverTab: ost
+
     OctoServerTab:
-        text: 'Servers?'
+        id: ost
 
 <OctoServerTab>:
+    grid: server_grid
     GridLayout:
         id: server_grid
         cols: 4
         spacing: 5,5
-        Button:
-            text: 'Server 1'
+        padding: 5,5,5,5
 
 <OctoLauncher>:
     height: 200
     size_hint_x:None
     width: 200
     size_hint_y:None
+    on_release: app.open_connection(self.config)
+
+<OctoServer>:
+    option_panel: options
+    info_panel: ipanel
+    cur_panel: ipanel
+    GridLayout:
+        cols: 2
+        StackLayout:
+            size_hint_x:None
+            width: 150
+            id: options
+            orientation: 'lr-tb'
+            Button:
+                height: 50
+                size_hint_y:None
+                text:'test1'
+            Button:
+                height: 50
+                size_hint_y:None
+                text:'test1'
+            Button:
+                height: 50
+                size_hint_y:None
+                text:'test1'
+            Button:
+                height: 50
+                size_hint_y:None
+                text:'test1'
+                
+        BoxLayout:
+            id: ipanel
+            Button:
+                text:'test1'
+            Button:
+                text:'test1'
+            Button:
+                text:'test1'
+            OctoDisplay:
+                text:'test1'
+
+<OctoDisplay>:
+    Button:
+        text: 'new info?'
