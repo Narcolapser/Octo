@@ -4,10 +4,10 @@
     do_default_tab: False
     serverTab: ost
 
-    OctoServerTab:
+    OctoServersTab:
         id: ost
 
-<OctoServerTab>:
+<OctoServersTab>:
     grid: server_grid
     GridLayout:
         id: server_grid
@@ -23,44 +23,25 @@
     on_release: app.open_connection(self.config)
 
 <OctoServer>:
-    option_panel: options
     info_panel: ipanel
-    cur_panel: ipanel
-    GridLayout:
-        cols: 2
-        StackLayout:
-            size_hint_x:None
-            width: 150
-            id: options
-            orientation: 'lr-tb'
-            Button:
-                height: 50
-                size_hint_y:None
-                text:'test1'
-            Button:
-                height: 50
-                size_hint_y:None
-                text:'test1'
-            Button:
-                height: 50
-                size_hint_y:None
-                text:'test1'
-            Button:
-                height: 50
-                size_hint_y:None
-                text:'test1'
-                
-        BoxLayout:
-            id: ipanel
-            Button:
-                text:'test1'
-            Button:
-                text:'test1'
-            Button:
-                text:'test1'
-            OctoDisplay:
-                text:'test1'
+    PageLayout:
+        id: ipanel
+        
 
-<OctoDisplay>:
+<OctoInfo>:
+    cols:2
     Button:
-        text: 'new info?'
+        text: 'testing'
+    Button:
+        text: 'testing'
+    Button:
+        text: 'testing'
+    Button:
+        text: 'testing'
+    Button:
+        text: 'testing'
+    Button:
+        text: 'testing'
+    Button:
+        text: 'testing'
+

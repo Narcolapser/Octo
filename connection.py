@@ -107,6 +107,17 @@ class Connection():
         '''
         return self.con.exec_command(com)
 
+    def simple_command(self,com):
+        '''
+        This method is designed to make simple calling methods like "uptime" or "ls" which have
+        no need for interaction, but are just to fetch info.
+
+        Arguments:
+        com - the command to be executed.
+        '''
+        stdin, stdout, stderr = self.con.exec_command(com)
+        return str(stdout.read(),'utf-8')
+
     def __con_lock(self):
         '''
         Hidden convenience method for acquiring when safe. 
