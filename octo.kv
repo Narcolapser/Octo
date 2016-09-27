@@ -1,0 +1,20 @@
+#:kivy 1.9.1
+
+<Octo>:    
+    do_default_tab: False
+    OctoServerTab:
+        text: 'Servers?'
+
+<OctoServerTab>:
+    GridLayout:
+        id: server_grid
+        cols: 4
+        spacing: 5,5
+        Button:
+            text: 'Server 1'
+
+<OctoLauncher>:
+    height: 200
+    size_hint_x:None
+    width: 200
+    size_hint_y:None

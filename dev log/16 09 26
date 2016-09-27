@@ -1,0 +1,10 @@
+I don't know if I'll actually get to any programming on Octo today, but I have officially decided I'm going to switch my GUI language.
+
+Reasons:
+I had intended this to be a program that was as pure default python as possible. But Paramiko is not an easy library to get working in windows. So it's already has that major headache to get it working. The advantage of not having to install libraries to get the rest of the program to work looses it's luster.
+
+I still don't like wx or qt though. People really come down on TK but I don't think it's all that bad. A little dated, but it's pretty light and that is very nice. However it can be a little convoluded at times.
+
+Enter Kivy. Kivy has a domains specific language whigh will help keep the python more simple. I like that. Kivy's layout managers are also pretty nice, but what is espectially nice about them is it isn't hard to write your own layout manager. I really liked the docker manager from WPF XAML and have wished for something like it in other languages. I could totally implement a docker layout for Kivy if I really wanted to. 
+
+But by far the biggest winner for Kivy is that it is super simple for cross platform. I can turn Octo into an android app. 
