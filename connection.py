@@ -50,16 +50,18 @@ class Connection():
         self.count = 0
         self.pool_lock = threading.Lock()
 
-    def openFile(self,path):
+    def openFile(self,path,mode=None):
         '''
         Standard file opening method. 
 
         Arguments:
         path - remote path.
         '''
+        if not mode:
+            mode = 'r'
         self.__con_lock()
         try:
-            ret = ConFile(path,self)
+            ret = ConFile(path,self,mode)
             self.count += 1
         finally:
             self.pool_lock.release()
@@ -98,14 +100,14 @@ class Connection():
         self.count += 1
         self.pool_lock.release()
 
-    def exec_command(self,com):
+    def exec_command(self,com,get_pty=False):
         '''
         A pass through method for paramiko's exec_command.
 
         Arguments:
         com - the command to be executed.
         '''
-        return self.con.exec_command(com)
+        return self.con.exec_command(com,get_pty=get_pty)
 
     def simple_command(self,com):
         '''
@@ -130,7 +132,7 @@ class Connection():
 ##        self.pool_lock.release()
 
 class ConFile():
-    def __init__(self,path,parent):
+    def __init__(self,path,parent,mode=None):
         '''
         An interface for remote files. This class will tend to opening and closing connections with
         the remote server and keeping track of the current location in the remote file. This way
@@ -145,19 +147,23 @@ class ConFile():
         path - the location of the file on the remote server.
         parent - the connection class that this confile belongs to. 
         '''
+        self.mode = mode
+        if not mode:
+            self.mode = 'r'
         self.path = path
         self.parent = parent
 
         try:
             self.sftp = parent.con.open_sftp()
-            self.file = self.sftp.open(path)
+            self.file = self.sftp.open(path,self.mode)
         except FileNotFoundError as e:
             print("file does not exist: {0}".format(path))
         except Exception as e:
             print("Something has gone wrong retriving file")
 
     def close(self):
-        self.parent.__fClose()
+        pass
+        #self.parent.__fClose()
 
     def lastEdit(self):
         try:
@@ -182,8 +188,13 @@ class ConFile():
     def write(self,content):
         self.file.write(content)
 
-    def uread(self,amount):
-        return str(self.file.read(amount),'utf-8')
+    def uread(self,amount=None):
+        ret = ''
+        fetch = str(self.file.read(65535),'utf-8')
+        while len(fetch):
+            ret += fetch
+            fetch = str(self.file.read(65535),'utf-8')
+        return ret
 
     def stat(self):
         return self.file.stat()

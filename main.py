@@ -1,4 +1,7 @@
+#python imports
 import json
+
+#Kivy Imports.
 import kivy
 kivy.require('1.9.1')
 
@@ -18,21 +21,32 @@ from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.uix.tabbedpanel import TabbedPanelItem
 from kivy.uix.tabbedpanel import TabbedPanelHeader
 
-
+#Octo imports
 from info_panel import Info_Panel
-import connection
+from logback_panel import Logback_Panel
+from model import *
 
-
+#Later I want to replace this with a proper settings system.
 hosts = json.load(open("hosts.ini"))
 
 class Octo(TabbedPanel):
+    '''
+    The main Octo class. A tabbed panel with tabs for each connection to a server.
+    '''
     serverTab = ObjectProperty(None)
     
     def addServers(self):
+        '''
+        This method is called to create the servers tab and add the servers to it.
+        '''
         self.serverTab.text = "Servers"
         self.serverTab.addServers()
 
     def add_connection(self,val):
+        '''
+        This method is used for creating a new tab. A connection is made to the relevant server and
+        then is passed to the OctoServer object that is created.
+        '''
         OServ = OctoServer()
         OServ.connect(val)
         OServ.text = val['name']
@@ -42,9 +56,16 @@ class Octo(TabbedPanel):
         
         
 class OctoServersTab(TabbedPanelItem):
+    '''
+    The default tab that has the servers as tiles. 
+    '''
     grid = ObjectProperty(None)
 
     def addServers(self):
+        '''
+        This method reads the hosts from json that was read in by hosts.ini. Then creates tiles for
+        each of the hosts. Right now just buttons. hopefully in the future they'll be a cooler.
+        '''
         for host in hosts:
             o = OctoLauncher()
             o.text = host
@@ -55,24 +76,17 @@ class OctoServer(TabbedPanelItem):
     info_panel = ObjectProperty(None)
 
     def connect(self,configs):
-        self.vals = configs
-        self.hostname = configs['name']
-        self.address = configs['address']
-        self.username = configs['auth']['username']
-        self.password = configs['auth']['password']
-        self.connection = connection.Connection(self.address,self.username,self.password,self.hostname)
+        self.server = Server(configs)
     
     def load_panels(self):
-        i1 = Info_Panel()
-        i1.setConnection(self.connection)
-        self.info_panel.add_widget(i1)
+        ip = Info_Panel()
+        ip.setServer(self.server)
+        self.info_panel.add_widget(ip)
         
-        i2 = Info_Panel()
-        i2.setConnection(self.connection)
-        self.info_panel.add_widget(i2)
+        lb = Logback_Panel()
+        lb.setServer(self.server)
+        self.info_panel.add_widget(lb)
         
-class OctoInfo(GridLayout):
-    pass
 
 class OctoLauncher(Button):
     pass

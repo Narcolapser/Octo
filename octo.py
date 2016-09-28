@@ -111,7 +111,7 @@ def log_config_window(val=None):
     ##config_file = sftp.open("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml")
     config_file = con.openFile("/usr/local/tomcat/webapps/uPortal/WEB-INF/classes/logback.xml")
 
-    conString = config_file.read().decode("utf-8")
+    conString = config_file.uread()
     config_file.close()
     #print(conString)
     #print(type(conString))
