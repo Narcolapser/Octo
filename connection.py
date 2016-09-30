@@ -189,11 +189,13 @@ class ConFile():
         self.file.write(content)
 
     def uread(self,amount=None):
+        if not amount:
+            amount = 65535
         ret = ''
-        fetch = str(self.file.read(65535),'utf-8')
-        while len(fetch):
+        fetch = str(self.file.read(amount),'utf-8')
+        while len(fetch) and len(ret) < amount:
             ret += fetch
-            fetch = str(self.file.read(65535),'utf-8')
+            fetch = str(self.file.read(amount),'utf-8')
         return ret
 
     def stat(self):
@@ -201,3 +203,6 @@ class ConFile():
 
     def tell(self):
         return self.file.tell()
+
+    def seek(self,val):
+        self.file.seek(val)

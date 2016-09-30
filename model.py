@@ -50,3 +50,20 @@ class LBAppender():
 
 class LBLogger():
     pass
+
+class Catalina():
+    def __init__(self,con):
+        self.con = con
+        self.file = con.openFile('/usr/local/tomcat/logs/catalina.out')
+        self.start = self.file.stat().st_size
+        self.start -= 10000
+        if self.start < 1:
+            self.start = 0
+        self.content = ''
+
+        self.file.seek(self.start)
+        self.content += self.file.uread(1000)
+
+    def update(self):
+        self.content += self.file.uread(1000)
+        return self.content

@@ -24,6 +24,7 @@ from kivy.uix.tabbedpanel import TabbedPanelHeader
 #Octo imports
 from info_panel import Info_Panel
 from logback_panel import Logback_Panel
+from catalina_panel import Catalina_Panel
 from model import *
 
 #Later I want to replace this with a proper settings system.
@@ -86,7 +87,10 @@ class OctoServer(TabbedPanelItem):
         lb = Logback_Panel()
         lb.setServer(self.server)
         self.info_panel.add_widget(lb)
-        
+
+        cp = Catalina_Panel()
+        cp.setServer(self.server)
+        self.info_panel.add_widget(cp)
 
 class OctoLauncher(Button):
     pass
