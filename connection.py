@@ -118,7 +118,7 @@ class Connection():
         com - the command to be executed.
         '''
         stdin, stdout, stderr = self.con.exec_command(com)
-        return str(stdout.read(),'utf-8')
+        return str(stdout.read()).encode('utf-8')
 
     def simple_sudo(self,com):
         '''
@@ -209,10 +209,10 @@ class ConFile():
         if not amount:
             amount = 65535
         ret = ''
-        fetch = str(self.file.read(amount),'utf-8')
+        fetch = str(self.file.read(amount)).encode('utf-8')
         while len(fetch) and len(ret) < amount:
             ret += fetch
-            fetch = str(self.file.read(amount),'utf-8')
+            fetch = str(self.file.read(amount)).encode('utf-8')
         return ret
 
     def stat(self):
