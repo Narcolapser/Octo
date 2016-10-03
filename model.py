@@ -27,8 +27,9 @@ class Server():
         return self.con.addr
 
     def getIsUp(self):
-        value = self.con.simple_command('ps -aux | grep "java"')
-        if "uportal" in value:
+        value = self.con.simple_command(' ps -ef | grep "dynatrace" | grep -v grep |awk \'{print $2}\'')
+        print(value)
+        if value:
             return True
         return False
 
