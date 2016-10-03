@@ -1,0 +1,17 @@
+Yesterday I did a fair bit of work on Octo and got a long way to having a functional program in Kivy. Today I would like to do more, but I just realized I need to cool it for just a moment. See, I almost went and repeated my mistake. Tieing the view and the model together inextrably. So I need to pause and re-arrange things while I've got the opportunity since the project is still pretty small. It shouldn't take to much, I mostly just need to make a model.py and load it with all the stuff.
+
+A little theory though quick:
+
+I seperated the connection off already, so that's one step. Connection encompased the idea of a connection to the server (ssh connection specifically) and with the other class in the file, the idea of a remote file.
+
+Things I need to abstract yet:
+	Log files: I have abstracted away the remote file. But I don't want the view to have any idea about it being stored remotely or locally. It should be seamless to it so if I need to change how the file gets stored locally it won't notice. 
+	Server Info: this will be the model that underpins the info panel.
+	Server launcher: the model that underpins the little launcher tiles on the server tab.
+	Server: the model that underpins OctoServer. 
+
+Never mind on server and server Info being seperate classes. That would have been a little excessive. info panel connects just fine to server, and theoretically server info would be something I might want to use else where. 
+
+I've got logback stared. I've got information coming up. Now I need to work on the formatting and add the ability to edit the information. Also, a scroll view will probably be necessary. There are a lot of loggers. I don't want to crunch the loggers in to much, I like them spaced nicely like they are. So a scroll view will definately be necessary. 
+
+Made good progress today despite not working very much on Octo. I'm excited by how this app is coming together! It will definately be the most professional looking thing I've ever made.

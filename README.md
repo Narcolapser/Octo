@@ -16,6 +16,7 @@ Features working:
 *	Copy selected section of log file.
 *	Fix threading so the UI doesn't freeze when the treeview is being populated.
 *	Fix filters to leverage the SQL backend
+*	Edit logging files to turn certain logs on and off
 
 Features to work on:
 *	Nest logs: there are instances of the same log for different days. I'd like to
@@ -27,6 +28,5 @@ Features to work on:
 *	Progress bar on log file being opened/downloaded.
 
 Some dream features:
-*	Edit logging files to turn certain logs on and off
 *	Re-deploy Portlets
 

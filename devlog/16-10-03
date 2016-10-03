@@ -1,0 +1,15 @@
+I just realized I really don't like having spaces in folder and file names. Makes it hard to commandline. I'm going to need to change all the previouslog entries and "dev log" to something without spaces. anyway.
+
+I've spent more time on Octo this morning than I probably should have. But I've basic logback functionallity up and running, and that's a fantastic improvement. I've even got those new changes up and running on Iron. So android app status is doing quite well. Which brings me to the point of commenting in this log before I end for today.
+
+Firstly: I need put in a few flags to figure out if I'm running python 2 or python 3. I want to keep this runable in python3, but right now I've only mastered deploying the android app in python2. So I need compatibility between both. The good thing is that they basically are. The only point where it becomes a problem is decoding a byte array into a string. So a quick google informs me of:
+import sys
+sys.version_info
+
+This is a tuple with version info. sys.version_info[0] should contain whether i'm running python 2 or 3. This should allow me to fix that problem.
+
+Second: Settings. Right now I'm hacking some code into the main.py file to get the android app to run. This means the .apk has my password in it. Not ok. So I need to figure out how to do a setting screen to add and remove servers and then store that information local to the device. Also, the passwords will need to be encrypted. 
+
+Third: Speaking of android app. The app doesn't come out of sleep, period. If you turn your device off then try to open Octo again it will be as if you had never opened Octo. This isn't really workable. You need to be able to put the app asleep, go to a meeting, pull up the app on your device and show people what you've found. And for that matter you can't have your device fall asleep while you are bug hunting and lose the various log filters you had. 
+
+After these are tended to I can continue adding new features.
