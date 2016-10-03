@@ -120,6 +120,23 @@ class Connection():
         stdin, stdout, stderr = self.con.exec_command(com)
         return str(stdout.read(),'utf-8')
 
+    def simple_sudo(self,com):
+        '''
+        Simple sudo is here to simplify the process of using a command that needs sudo. It will
+        only work if the user you are logged in as has sudo privilages.
+
+        Arguments:
+        com - The command to be executed. Sudo will be added. so if you need to run:
+            sudo cp here there
+        just pass
+            cp here there
+        and this command will take care of the rest.
+        '''
+        stdin, stdout, stderr = self.con.exec_command("sudo " + com, get_pty=True)
+        stdin.write(self.password+"\n")
+        print(stdout.readlines())
+        print(stdout.readlines())
+
     def __con_lock(self):
         '''
         Hidden convenience method for acquiring when safe. 

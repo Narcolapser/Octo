@@ -5,17 +5,32 @@ from kivy.clock import Clock
 
 import model
 
+#Todo: When the content is first loaded, I don't think all the data get's pulled, something is a
+#bit off there. So this needs to be updated yet to get the log up to the end on the first pass.
+
 class Catalina_Panel(ScrollView):
-    text = StringProperty("w00t!")
+    '''
+    This is a simple panel that just displays the catalina output. Quick and handy to see what is
+    going on for each server.
+    '''
+    text = StringProperty("")
     def setServer(self,server):
+        '''
+        Set the server object for this catalina object.
+        '''
         self.server = server
         self.cat = model.Catalina(self.server.con)
-        #print(type(self.cat.start))
-        #self.text = str(self.cat.start)
         self.text = self.cat.content
+
+        #check for new content once a second.
         Clock.schedule_interval(self.update,1)
 
     def update(self, *args):
+        '''
+        See if there is new text. If the user left the panel at the bottom of the log, then
+        automatically scroll the window to keep it at the bottom. If the user has scrolled else
+        where, then don't automatically scroll them down.
+        '''
         at_bottom = self.scroll_y < 0.01
         self.text = self.cat.update()
         if at_bottom:

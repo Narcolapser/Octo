@@ -6,26 +6,48 @@ from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
 import model
 
 class Logback_Panel(ScrollView):
+    '''
+    The logback panel is used to turn logs on and off as well as adjust the error level of each one
+    and the default error level.
+    '''
     grid = ObjectProperty(None)
-    
     def setServer(self,server):
+        '''
+        Save the local variables needed. Server specifically, but also this method spins up an
+        instance of the Logback model to reference.
+        '''
         self.server = server
         self.logback = model.LogbackFile(server.con)
-        self.load()
-
-    def load(self):
+##        self.load()
+##   between these two, I think I made more work for myself. So i just commented them out.
+##    def load(self):
         loggers = self.logback.getLoggers()
+        self.loggers = []
         for i in loggers:
             l = Logback_Logger()
             l.load_logger(i)
+            self.loggers.append(l)
             self.grid.add_widget(l)
 
+    def save_logback(self):
+        '''
+        Save the logback now that you've updated what you want.
+        '''
+        self.logback.save()
+
 class Logback_Logger(GridLayout):
+    '''
+    View class for the individual loggers. 
+    '''
+
     name = StringProperty('Loading...')
     active = BooleanProperty(False)
     level = StringProperty('Loading...')
 
     def load_logger(self,logger):
+        '''
+        Load the logger and create it's view.
+        '''
         self.logger = logger
         self.name = logger.name
         if logger.commented:
@@ -34,11 +56,18 @@ class Logback_Logger(GridLayout):
             self.active = True
         self.level = logger.level
 
-    def deactivate(self,val):
-        pass
+    def toggle_me(self):
+        '''
+        called whenever the status of the activity toggle changes. This method makes sure that the
+        underlying logger get's the memo.
+        '''
+        self.active = self.ids['activity_switch'].active
+        if self.active:
+            self.logger.commented = False
+        else:
+            self.logger.commented = True
+        return self.active
         
-
-#Builder.load_file('./logback_panel.kv')
 
 kv = '''
 <Logback_Panel>:
@@ -60,9 +89,23 @@ kv = '''
         cols: 1
         size_hint_y:None
         height: self.minimum_height
+        GridLayout:
+            height: 50
+            size_hint_y: None
+            cols: 3
+            Label:
+                text: 'name of logger'
+            Label:
+                text: 'Is logger active?'
+            Label:
+                text: 'Logging Level'
+        Button:
+            height: 50
+            size_hint_y: None
+            text: 'Save'
+            on_press: root.save_logback()
 
 <Logback_Logger>:
-    
     cols:3
     height: 50
     size_hint_y: None
@@ -72,10 +115,10 @@ kv = '''
     Switch:
         id: activity_switch
         active: root.active
+        on_active: root.toggle_me()
     Label:
         text: root.level
         
 '''
 
 Builder.load_string(kv)
-

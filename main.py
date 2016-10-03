@@ -74,23 +74,36 @@ class OctoServersTab(TabbedPanelItem):
             self.grid.add_widget(o)
 
 class OctoServer(TabbedPanelItem):
+    '''
+    The holder for the server info panels. This is a subclass of tabbed panel item, so it is also
+    the tab at the top of the display. So this holds the info panels and represents itself in the
+    tab row on the top.
+    '''
     info_panel = ObjectProperty(None)
 
     def connect(self,configs):
+        '''
+        Create the connection that the info panels will use.
+        '''
         self.server = Server(configs)
     
     def load_panels(self):
+        '''
+        Instantiate and load the info panels into the display. Note that the order they are
+        displayed is opposite the order that they are entered below.
+        '''
         ip = Info_Panel()
         ip.setServer(self.server)
         self.info_panel.add_widget(ip)
         
         lb = Logback_Panel()
         lb.setServer(self.server)
-        self.info_panel.add_widget(lb)
+        self.info_panel.add_widget(lb)        
 
         cp = Catalina_Panel()
         cp.setServer(self.server)
         self.info_panel.add_widget(cp)
+        
 
 class OctoLauncher(Button):
     pass
