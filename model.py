@@ -19,6 +19,8 @@ class Server():
         self.password = config['auth']['password']
 
         self.con = connection.Connection(self.address,self.username,self.password,self.hostname)
+
+        self.PID = None
         
     def getHostName(self):
         return self.hostname
@@ -27,11 +29,21 @@ class Server():
         return self.con.addr
 
     def getIsUp(self):
-        value = self.con.simple_command(' ps -ef | grep "dynatrace" | grep -v grep |awk \'{print $2}\'')
-        print(value)
-        if value:
+        self.getPID()
+        if self.PID:
             return True
         return False
+
+    def getPID(self):
+        self.PID = self.con.simple_command(' ps -ef | grep "dynatrace" | grep -v grep |awk \'{print $2}\'')
+        print([self.PID])
+        return self.PID
+
+    def getServiceUpTime(self):
+        com = "ps -p {0} -o etime=".format(self.getPID().replace('\n',''))
+        value = self.con.simple_command(com)
+        print(com,value)
+        return value
 
     def getUpTime(self):
         value = self.con.simple_command("uptime")
