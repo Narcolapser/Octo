@@ -17,6 +17,8 @@ from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.settings import SettingsWithSidebar
 from kivy.uix.settings import SettingOptions
+from kivy.uix.popup import Popup
+from kivy.uix.textinput import TextInput
 
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.floatlayout import FloatLayout
@@ -122,6 +124,86 @@ class AddServer(SettingOptions):
 
     def _create_popup(self, instance):
         print("test")
+        self.settings = self.parent.parent.parent.parent.parent
+
+        content = GridLayout()
+        content.cols = 1
+        t = TextInput(text='Name',size_hint=(1,None),size=(100,50))
+        content.add_widget(t)
+        b = Button(text='Add',size_hint=(1,None),size=(100,50))
+        content.add_widget(b)
+        
+        popup = Popup(title='New Server Name:',
+                      content=content,
+                      size_hint=(None, 0), size=(400, 200))
+
+        b.bind(on_press=self.newServer)
+        popup.b = b
+        popup.t = t
+        self.popup = popup
+        popup.open()
+
+    def newServer(self,val):
+        name = self.popup.t.text
+        self.popup.dismiss()
+        sc = [
+            {'type': 'string',
+                    'title': 'Name',
+                    'desc': 'Decorator name.',
+                    'section': name,
+                    'key': 'name'
+            },
+            {'type': 'string',
+                    'title': 'Address',
+                    'desc': 'The FQDN or IP address of the server to connect to',
+                    'section': name,
+                    'key': 'address'
+            },
+            {'type': 'string',
+                    'title': 'Login Username',
+                    'desc': 'Your ssh username',
+                    'section': name,
+                    'key': 'username'
+            },
+            {'type': 'string',
+                    'title': 'Login Password',
+                    'desc': 'your ssh password',
+                    'section': name,
+                    'key': 'password'
+            }
+        ]
+ 
+        
+        self.settings.add_json_panel(name,appPointer.config,data=json.dumps(server_config))
+
+
+server_config = [
+	{'type': 'string',
+		'title': 'Name',
+		'desc': 'Decorator name.',
+		'section': 'Server',
+		'key': 'name'
+	},
+	{'type': 'string',
+		'title': 'Address',
+		'desc': 'The FQDN or IP address of the server to connect to',
+		'section': 'Server',
+		'key': 'address'
+	},
+	{'type': 'string',
+		'title': 'Login Username',
+		'desc': 'Your ssh username',
+		'section': 'Server',
+		'key': 'username'
+	},
+	{'type': 'string',
+		'title': 'Login Password',
+		'desc': 'your ssh password',
+		'section': 'Server',
+		'key': 'password'
+	}
+]
+        
 
 class OctoSettings(SettingsWithSidebar):
     def __init__(self, *args, **kargs):
@@ -134,8 +216,8 @@ class OctoApp(App):
         octo_over = OctoOverlay()
         octo_over.octo.addServers()
         self.octo = octo_over.octo
-        self.data_dir = getattr(self, 'user_data_dir')
         self.store = join(self.data_dir, 'hosts.json')
+        
         return octo_over
 
     def on_pause(self):
@@ -148,19 +230,32 @@ class OctoApp(App):
         self.octo.add_connection(val)
 
     def build_config(self,config):
-        #print(config)
+        self.data_dir = getattr(self, 'user_data_dir')
+        config.read(join(self.data_dir, 'octo.ini'))
         config.setdefaults('Octo',
             {'optionsOcto':'Click to add server.'})
+        config.setdefaults('Server',
+            {'name':'servername',
+             'address':'127.0.0.1',
+             'username':'username',
+             'password':'wise guy'
+             })
+                           
 
     def build_settings(self,settings):
-        #print(settings)
         with open(join(self.data_dir,'Octo.json')) as val_file:
             vals = val_file.read()
-            print(vals)
             settings.add_json_panel('Octo',self.config,data=vals)
+        with open('Octo.ini') as ini_file:
+            vals = ini_file.read()
+            print(vals)
+            
         
     def on_config_change(self,config, section, key, value):
         print(config, section, key, value)
 
+appPointer = None
+
 if __name__ == '__main__':
-    OctoApp().run()
+    appPointer = OctoApp()
+    appPointer.run()
