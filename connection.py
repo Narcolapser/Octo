@@ -24,6 +24,7 @@ Date: 2016-09-25
 import paramiko
 import time
 import threading
+import sys
 
 
 class Connection():
@@ -49,6 +50,8 @@ class Connection():
         self.con.connect(addr,username=user,password=password)
         self.count = 0
         self.pool_lock = threading.Lock()
+
+        self.version = sys.version_info[0]
 
     def openFile(self,path,mode=None):
         '''
@@ -118,9 +121,10 @@ class Connection():
         com - the command to be executed.
         '''
         stdin, stdout, stderr = self.con.exec_command(com)
-        ret = "BROKEN!"
-        #ret = str(stdout.read()).encode('utf-8')
-        ret = str(stdout.read(),'utf-8')
+        if self.version == 2:
+            ret = str(stdout.read()).encode('utf-8')
+        else:
+            ret = str(stdout.read(),'utf-8')
 
         return ret
 
@@ -174,6 +178,8 @@ class ConFile():
         self.path = path
         self.parent = parent
 
+        self.version = sys.version_info[0]
+
         try:
             self.sftp = parent.con.open_sftp()
             self.file = self.sftp.open(path,self.mode)
@@ -183,7 +189,7 @@ class ConFile():
             print("Something has gone wrong retriving file")
 
     def close(self):
-        pass
+        self.file.close()
         #self.parent.__fClose()
 
     def lastEdit(self):
@@ -213,12 +219,16 @@ class ConFile():
         if not amount:
             amount = 65535
         ret = ''
-        #fetch = str(self.file.read(amount)).encode('utf-8')
-        fetch = str(self.file.read(amount),'utf-8')
+        if self.version == 2:
+            fetch = str(self.file.read(amount)).encode('utf-8')
+        else:
+            fetch = str(self.file.read(amount),'utf-8')
         while len(fetch) and len(ret) < amount:
             ret += fetch
-            #fetch = str(self.file.read(amount)).encode('utf-8')
-            fetch = str(self.file.read(amount),'utf-8')
+            if self.version == 2:
+                fetch = str(self.file.read(amount)).encode('utf-8')
+            else:
+                fetch = str(self.file.read(amount),'utf-8')
         return ret
 
     def stat(self):

@@ -116,6 +116,12 @@ class OctoApp(App):
         self.octo = octo
         return octo
 
+    def on_pause(self):
+        return True
+
+    def on_resume(self):
+        pass
+
     def open_connection(self,val):
         self.octo.add_connection(val)
         
