@@ -1,5 +1,6 @@
 #python imports
 import json
+from os.path import join
 
 #Kivy Imports.
 import kivy
@@ -7,19 +8,23 @@ kivy.require('1.9.1')
 
 from kivy.app import App
 from kivy.config import ConfigParser
+from kivy.storage.jsonstore import JsonStore
 
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, StringProperty
 
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.settings import SettingsWithSidebar
+from kivy.uix.settings import SettingOptions
 
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.floatlayout import FloatLayout
 
 from kivy.uix.tabbedpanel import TabbedPanel
 from kivy.uix.tabbedpanel import TabbedPanelItem
 from kivy.uix.tabbedpanel import TabbedPanelHeader
+
 
 #Octo imports
 from info_panel import Info_Panel
@@ -108,13 +113,30 @@ class OctoServer(TabbedPanelItem):
 class OctoLauncher(Button):
     pass
 
+class OctoOverlay(FloatLayout):
+    octo = ObjectProperty(None)
+    sb = ObjectProperty(None)
+    settings_string = StringProperty(u'...')#Things I wanted: ⚙⋮≡
+
+class AddServer(SettingOptions):
+
+    def _create_popup(self, instance):
+        print("test")
+
+class OctoSettings(SettingsWithSidebar):
+    def __init__(self, *args, **kargs):
+        super(OctoSettings, self).__init__(*args, **kargs)
+        self.register_type('addserver', AddServer)
+
 class OctoApp(App):
     def build(self):
-        self.settings_cls = SettingsWithSidebar
-        octo = Octo()
-        octo.addServers()
-        self.octo = octo
-        return octo
+        self.settings_cls = OctoSettings
+        octo_over = OctoOverlay()
+        octo_over.octo.addServers()
+        self.octo = octo_over.octo
+        self.data_dir = getattr(self, 'user_data_dir')
+        self.store = join(self.data_dir, 'hosts.json')
+        return octo_over
 
     def on_pause(self):
         return True
@@ -124,8 +146,21 @@ class OctoApp(App):
 
     def open_connection(self,val):
         self.octo.add_connection(val)
-        
 
+    def build_config(self,config):
+        #print(config)
+        config.setdefaults('Octo',
+            {'optionsOcto':'Click to add server.'})
+
+    def build_settings(self,settings):
+        #print(settings)
+        with open(join(self.data_dir,'Octo.json')) as val_file:
+            vals = val_file.read()
+            print(vals)
+            settings.add_json_panel('Octo',self.config,data=vals)
+        
+    def on_config_change(self,config, section, key, value):
+        print(config, section, key, value)
 
 if __name__ == '__main__':
     OctoApp().run()

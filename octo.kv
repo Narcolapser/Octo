@@ -3,9 +3,22 @@
 <Octo>:    
     do_default_tab: False
     serverTab: ost
-
     OctoServersTab:
         id: ost
+
+<OctoOverlay>:
+    octo: octo_id
+    sb: settings_button
+    Octo:
+        id: octo_id
+        size_hint: (1,1)
+    Button:
+        size: 45,45
+        size_hint: 0,0
+        pos: root.width-45,root.height-46
+        id: settings_button
+        text: root.settings_string
+        on_release: app.open_settings()
 
 <OctoServersTab>:
     grid: server_grid
@@ -27,21 +40,3 @@
     PageLayout:
         id: ipanel
         
-
-<OctoInfo>:
-    cols:2
-    Button:
-        text: 'testing'
-    Button:
-        text: 'testing'
-    Button:
-        text: 'testing'
-    Button:
-        text: 'testing'
-    Button:
-        text: 'testing'
-    Button:
-        text: 'testing'
-    Button:
-        text: 'testing'
-
