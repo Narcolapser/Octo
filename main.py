@@ -146,6 +146,13 @@ class AddServer(SettingOptions):
     def newServer(self,val):
         name = self.popup.t.text
         self.popup.dismiss()
+        appPointer.config.setdefaults(name,
+            {'name':name,
+             'address':'127.0.0.1',
+             'username':'username',
+             'password':'wise guy'
+             })
+
         sc = [
             {'type': 'string',
                     'title': 'Name',
@@ -174,35 +181,7 @@ class AddServer(SettingOptions):
         ]
  
         
-        self.settings.add_json_panel(name,appPointer.config,data=json.dumps(server_config))
-
-
-server_config = [
-	{'type': 'string',
-		'title': 'Name',
-		'desc': 'Decorator name.',
-		'section': 'Server',
-		'key': 'name'
-	},
-	{'type': 'string',
-		'title': 'Address',
-		'desc': 'The FQDN or IP address of the server to connect to',
-		'section': 'Server',
-		'key': 'address'
-	},
-	{'type': 'string',
-		'title': 'Login Username',
-		'desc': 'Your ssh username',
-		'section': 'Server',
-		'key': 'username'
-	},
-	{'type': 'string',
-		'title': 'Login Password',
-		'desc': 'your ssh password',
-		'section': 'Server',
-		'key': 'password'
-	}
-]
+        self.settings.add_json_panel(name,appPointer.config,data=json.dumps(sc))
         
 
 class OctoSettings(SettingsWithSidebar):
@@ -231,16 +210,18 @@ class OctoApp(App):
 
     def build_config(self,config):
         self.data_dir = getattr(self, 'user_data_dir')
-        config.read(join(self.data_dir, 'octo.ini'))
+        self.config = config
+        config.read('octo.ini')
         config.setdefaults('Octo',
             {'optionsOcto':'Click to add server.'})
-        config.setdefaults('Server',
-            {'name':'servername',
-             'address':'127.0.0.1',
-             'username':'username',
-             'password':'wise guy'
-             })
-                           
+
+        for con in config.sections():
+            for key in config[con]:
+                print(key,config[con][key])
+##            print(config[con]['name'])
+##            print(config[con]['address'])
+##            print(config[con]['username'])
+##            print(config[con]['password'])
 
     def build_settings(self,settings):
         with open(join(self.data_dir,'Octo.json')) as val_file:
