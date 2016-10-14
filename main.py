@@ -50,6 +50,13 @@ class Octo(TabbedPanel):
         self.serverTab.text = "Servers"
         self.serverTab.addServers()
 
+    def addServer(self,config):
+        '''
+        This method is called to create with a config to add it to the servers tab.
+        '''
+        self.serverTab.text = "Servers"
+        self.serverTab.addServer(config)
+
     def add_connection(self,val):
         '''
         This method is used for creating a new tab. A connection is made to the relevant server and
@@ -79,6 +86,25 @@ class OctoServersTab(TabbedPanelItem):
             o.text = host
             o.config = hosts[host]
             self.grid.add_widget(o)
+
+    def addServer(self,con):
+        '''
+        Takes a configuration and adds it to the server list.
+        '''
+        #print(con.name)
+        if con.name == 'Octo':
+            return
+        o = OctoLauncher()
+        o.text=con['name']
+        
+        config = {}
+        config['name']=con['name']
+        config['auth']={'username':con['username'],'password':con['password']}
+        config['address']=con['address']
+        o.config=config
+        self.grid.add_widget(o)
+        
+        
 
 class OctoServer(TabbedPanelItem):
     '''
@@ -193,8 +219,14 @@ class OctoApp(App):
     def build(self):
         self.settings_cls = OctoSettings
         octo_over = OctoOverlay()
-        octo_over.octo.addServers()
+        
+        #octo_over.octo.addServers()
+        for con in self.config.sections():
+            octo_over.octo.addServer(self.config[con])
+
+        
         self.octo = octo_over.octo
+        
         self.store = join(self.data_dir, 'hosts.json')
         
         return octo_over
@@ -215,25 +247,71 @@ class OctoApp(App):
         config.setdefaults('Octo',
             {'optionsOcto':'Click to add server.'})
 
-        for con in config.sections():
-            for key in config[con]:
-                print(key,config[con][key])
-##            print(config[con]['name'])
-##            print(config[con]['address'])
-##            print(config[con]['username'])
-##            print(config[con]['password'])
-
     def build_settings(self,settings):
         with open(join(self.data_dir,'Octo.json')) as val_file:
             vals = val_file.read()
             settings.add_json_panel('Octo',self.config,data=vals)
         with open('Octo.ini') as ini_file:
-            vals = ini_file.read()
-            print(vals)
+            vals = ini_file.read().split('[')
+            for v in vals:
+                if "\nname" not in v:
+                    continue
+                #print(v)
+                items = v.split('\n')[1:]
+                #print(items)
+                for i in items:
+                    if "name" in i:
+                        break
+                #print(i)
+                name = i.split(' = ')[1]
+                print(name)
+                sc = makeSettingsJson(name)
+                settings.add_json_panel(name,appPointer.config,data=json.dumps(sc))
+                
+            
+            
+            #json = makeSettingsJson(name)
+            #self.settings.add_json_panel(name,appPointer.config,data=json.dumps(sc))
             
         
     def on_config_change(self,config, section, key, value):
         print(config, section, key, value)
+
+def makeSettingsJson(name):
+    appPointer.config.setdefaults(name,
+            {'name':name,
+             'address':'127.0.0.1',
+             'username':'username',
+             'password':'wise guy'
+             })
+
+    sc = [
+            {'type': 'string',
+                    'title': 'Name',
+                    'desc': 'Decorator name.',
+                    'section': name,
+                    'key': 'name'
+            },
+            {'type': 'string',
+                    'title': 'Address',
+                    'desc': 'The FQDN or IP address of the server to connect to',
+                    'section': name,
+                    'key': 'address'
+            },
+            {'type': 'string',
+                    'title': 'Login Username',
+                    'desc': 'Your ssh username',
+                    'section': name,
+                    'key': 'username'
+            },
+            {'type': 'string',
+                    'title': 'Login Password',
+                    'desc': 'your ssh password',
+                    'section': name,
+                    'key': 'password'
+            }
+        ]
+    return sc
 
 appPointer = None
 
