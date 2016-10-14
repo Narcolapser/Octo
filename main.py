@@ -146,83 +146,35 @@ class OctoOverlay(FloatLayout):
     sb = ObjectProperty(None)
     settings_string = StringProperty(u'...')#Things I wanted: ⚙⋮≡
 
-class AddServer(SettingOptions):
+    def settingsPressed(self):
+        print("OPRESSIVE!")
+        self.remove_widget(self.octo)
+        self.remove_widget(self.sb)
 
-    def _create_popup(self, instance):
-        print("test")
-        self.settings = self.parent.parent.parent.parent.parent
+        self.oed = OctoEditServer()
+        self.oed.doneButton.bind(on_press=self.settingsReturn)
+        self.add_widget(self.oed)
 
-        content = GridLayout()
-        content.cols = 1
-        t = TextInput(text='Name',size_hint=(1,None),size=(100,50))
-        content.add_widget(t)
-        b = Button(text='Add',size_hint=(1,None),size=(100,50))
-        content.add_widget(b)
+    def settingsReturn(self,val):
+        print("Depressive!",val)
+
+        self.remove_widget(self.oed)
+        self.add_widget(self.octo)
+        self.add_widget(self.sb)
+
         
-        popup = Popup(title='New Server Name:',
-                      content=content,
-                      size_hint=(None, 0), size=(400, 200))
-
-        b.bind(on_press=self.newServer)
-        popup.b = b
-        popup.t = t
-        self.popup = popup
-        popup.open()
-
-    def newServer(self,val):
-        name = self.popup.t.text
-        self.popup.dismiss()
-        appPointer.config.setdefaults(name,
-            {'name':name,
-             'address':'127.0.0.1',
-             'username':'username',
-             'password':'wise guy'
-             })
-
-        sc = [
-            {'type': 'string',
-                    'title': 'Name',
-                    'desc': 'Decorator name.',
-                    'section': name,
-                    'key': 'name'
-            },
-            {'type': 'string',
-                    'title': 'Address',
-                    'desc': 'The FQDN or IP address of the server to connect to',
-                    'section': name,
-                    'key': 'address'
-            },
-            {'type': 'string',
-                    'title': 'Login Username',
-                    'desc': 'Your ssh username',
-                    'section': name,
-                    'key': 'username'
-            },
-            {'type': 'string',
-                    'title': 'Login Password',
-                    'desc': 'your ssh password',
-                    'section': name,
-                    'key': 'password'
-            }
-        ]
- 
-        
-        self.settings.add_json_panel(name,appPointer.config,data=json.dumps(sc))
-        
-
-class OctoSettings(SettingsWithSidebar):
-    def __init__(self, *args, **kargs):
-        super(OctoSettings, self).__init__(*args, **kargs)
-        self.register_type('addserver', AddServer)
+class OctoEditServer(GridLayout):
+    doneButton = ObjectProperty(None)
+    pass
 
 class OctoApp(App):
     def build(self):
-        self.settings_cls = OctoSettings
+        #self.settings_cls = OctoSettings
         octo_over = OctoOverlay()
         
-        #octo_over.octo.addServers()
-        for con in self.config.sections():
-            octo_over.octo.addServer(self.config[con])
+        octo_over.octo.addServers()
+        #for con in self.config.sections():
+        #    octo_over.octo.addServer(self.config[con])
 
         
         self.octo = octo_over.octo
@@ -251,67 +203,6 @@ class OctoApp(App):
         with open(join(self.data_dir,'Octo.json')) as val_file:
             vals = val_file.read()
             settings.add_json_panel('Octo',self.config,data=vals)
-        with open('Octo.ini') as ini_file:
-            vals = ini_file.read().split('[')
-            for v in vals:
-                if "\nname" not in v:
-                    continue
-                #print(v)
-                items = v.split('\n')[1:]
-                #print(items)
-                for i in items:
-                    if "name" in i:
-                        break
-                #print(i)
-                name = i.split(' = ')[1]
-                print(name)
-                sc = makeSettingsJson(name)
-                settings.add_json_panel(name,appPointer.config,data=json.dumps(sc))
-                
-            
-            
-            #json = makeSettingsJson(name)
-            #self.settings.add_json_panel(name,appPointer.config,data=json.dumps(sc))
-            
-        
-    def on_config_change(self,config, section, key, value):
-        print(config, section, key, value)
-
-def makeSettingsJson(name):
-    appPointer.config.setdefaults(name,
-            {'name':name,
-             'address':'127.0.0.1',
-             'username':'username',
-             'password':'wise guy'
-             })
-
-    sc = [
-            {'type': 'string',
-                    'title': 'Name',
-                    'desc': 'Decorator name.',
-                    'section': name,
-                    'key': 'name'
-            },
-            {'type': 'string',
-                    'title': 'Address',
-                    'desc': 'The FQDN or IP address of the server to connect to',
-                    'section': name,
-                    'key': 'address'
-            },
-            {'type': 'string',
-                    'title': 'Login Username',
-                    'desc': 'Your ssh username',
-                    'section': name,
-                    'key': 'username'
-            },
-            {'type': 'string',
-                    'title': 'Login Password',
-                    'desc': 'your ssh password',
-                    'section': name,
-                    'key': 'password'
-            }
-        ]
-    return sc
 
 appPointer = None
 

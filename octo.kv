@@ -15,10 +15,11 @@
     Button:
         size: 45,45
         size_hint: 0,0
-        pos: root.width-45,root.height-46
+        pos: root.width-45,root.height-45
         id: settings_button
         text: root.settings_string
-        on_release: app.open_settings()
+        on_release: root.settingsPressed()
+    
 
 <OctoServersTab>:
     grid: server_grid
@@ -39,4 +40,29 @@
     info_panel: ipanel
     PageLayout:
         id: ipanel
-        
+
+<OctoEditServer>:
+    doneButton: db
+    canvas:
+        Color:
+            rgba: 0,0,0,1
+        Rectangle:
+            size: self.size
+            pos: 0,0
+    cols: 2
+    Label:
+        text: 'Server Name:'
+    TextInput:
+    Label:
+        text: 'Address:'
+    TextInput:
+    Label:
+        text: 'User name:'
+    TextInput:
+    Label:
+        text: 'Password:'
+    TextInput:
+        password: True
+    Button:
+        text: 'Done'
+        id: db
