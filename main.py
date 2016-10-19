@@ -91,18 +91,14 @@ class OctoServersTab(TabbedPanelItem):
         '''
         Takes a configuration and adds it to the server list.
         '''
-        #print(con.name)
-        if con.name == 'Octo':
-            return
-        o = OctoLauncher()
-        o.text=con['name']
-        
-        config = {}
-        config['name']=con['name']
-        config['auth']={'username':con['username'],'password':con['password']}
-        config['address']=con['address']
-        o.config=config
-        self.grid.add_widget(o)
+        try:
+            o = OctoLauncher()
+            o.text=con['name']
+            con['password'] = decrypt(con['password'])
+            o.config=con
+            self.grid.add_widget(o)
+        except Exception as e:
+            print(e)
         
         
 
@@ -145,23 +141,42 @@ class OctoOverlay(FloatLayout):
     octo = ObjectProperty(None)
     sb = ObjectProperty(None)
     settings_string = StringProperty(u'...')#Things I wanted: ⚙⋮≡
+    
+    data_dir = ''
 
     def settingsPressed(self):
-        print("OPRESSIVE!")
-        self.remove_widget(self.octo)
-        self.remove_widget(self.sb)
+        self.octo.size=(0,0)
+        self.sb.size=(0,0)
+        self.octo.size_hint=(0,0)
 
         self.oed = OctoEditServer()
         self.oed.doneButton.bind(on_press=self.settingsReturn)
         self.add_widget(self.oed)
 
     def settingsReturn(self,val):
-        print("Depressive!",val)
-
         self.remove_widget(self.oed)
-        self.add_widget(self.octo)
-        self.add_widget(self.sb)
+        self.sb.size=(45,45)
+        self.octo.size_hint=(1,1)
+        try:
+            config = {}
+            config['name'] = self.oed.ids['name'].text
+            config['address'] = self.oed.ids['address'].text
+            config['username'] = self.oed.ids['username'].text
+            config['password'] = encrypt(self.oed.ids['password'].text)
+            self.store.put(config['name'],
+                           name=config['name'],
+                           address=config['address'],
+                           username=config['username'],
+                           password=config['password'])
+            self.octo.addServer(config)
+        except:
+            pass
 
+    def loadServers(self):
+        self.store = JsonStore(join(self.data_dir, 'hosts.json'))
+
+        for key in self.store.keys():
+            self.octo.addServer(self.store.get(key))
         
 class OctoEditServer(GridLayout):
     doneButton = ObjectProperty(None)
@@ -171,16 +186,11 @@ class OctoApp(App):
     def build(self):
         #self.settings_cls = OctoSettings
         octo_over = OctoOverlay()
-        
-        octo_over.octo.addServers()
-        #for con in self.config.sections():
-        #    octo_over.octo.addServer(self.config[con])
-
-        
         self.octo = octo_over.octo
-        
-        self.store = join(self.data_dir, 'hosts.json')
-        
+        self.octo_over = octo_over
+        self.octo_over.data_dir = self.data_dir
+        octo_over.loadServers()
+
         return octo_over
 
     def on_pause(self):

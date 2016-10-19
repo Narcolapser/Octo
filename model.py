@@ -15,8 +15,8 @@ class Server():
 
         self.hostname = config['name']
         self.address = config['address']
-        self.username = config['auth']['username']
-        self.password = config['auth']['password']
+        self.username = config['username']
+        self.password = config['password']
 
         self.con = connection.Connection(self.address,self.username,self.password,self.hostname)
 
@@ -127,3 +127,32 @@ class Catalina():
         '''
         self.content += self.file.uread(1000)
         return self.content
+
+def encrypt(val,salt=None):
+    if not salt:
+        salt = get_salt()
+    print(salt)
+    ints = [ord(i) for i in val]
+    hashed = [i^salt for i in ints]
+    ret = ','.join([str(i) for i in hashed])
+    return ret
+
+def decrypt(val,salt=None):
+    if not salt:
+        salt = get_salt()
+    print(salt)
+    ints = val.split(',')
+    nashed = [int(i)^salt for i in ints]
+    ret = ''.join([chr(i) for i in nashed])
+    return ret
+
+def get_salt():
+##  this didn't quite work. I'll have to figure something else out.
+##    import uuid
+##    uid = uuid.uuid1()
+##    salt = ord(str(uid)[0])
+##    return salt
+
+    #temp
+    return 63
+
