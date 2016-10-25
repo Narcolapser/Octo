@@ -140,10 +140,11 @@ class Connection():
             cp here there
         and this command will take care of the rest.
         '''
+        #print(com)
         stdin, stdout, stderr = self.con.exec_command("sudo " + com, get_pty=True)
         stdin.write(self.password+"\n")
-        print(stdout.readlines())
-        print(stdout.readlines())
+        #print(stdout.readlines())
+        #print(stdout.readlines())
 
     def __con_lock(self):
         '''
@@ -179,6 +180,8 @@ class ConFile():
         self.parent = parent
 
         self.version = sys.version_info[0]
+
+        self.cursor = 0
 
         try:
             self.sftp = parent.con.open_sftp()
@@ -239,3 +242,5 @@ class ConFile():
 
     def seek(self,val):
         self.file.seek(val)
+
+#To the King!

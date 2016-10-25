@@ -1,12 +1,27 @@
 import connection
 import logback
 
+import sqlite3
+import time
+import os
+import random
+import tempfile
+
+class Gstore(dict):
+    pass
+
+global gstore
+gstore = Gstore()
+
+class OctoError(Exception):
+    pass
+
 class Server():
     '''
     Wrapper class for a server connection. Meant to be passed around to the info panels. There are
     a couple of default server information methods available. 
     '''
-    def __init__(self,config):
+    def __init__(self,config,data_dir):
         '''
         Arguments:
         The configuration.
@@ -22,6 +37,7 @@ class Server():
 
         self.PID = None
         
+
     def getHostName(self):
         return self.hostname
 
@@ -36,13 +52,13 @@ class Server():
 
     def getPID(self):
         self.PID = self.con.simple_command(' ps -ef | grep "dynatrace" | grep -v grep |awk \'{print $2}\'')
-        print([self.PID])
+        #print([self.PID])
         return self.PID
 
     def getServiceUpTime(self):
         com = "ps -p {0} -o etime=".format(self.getPID().replace('\n',''))
         value = self.con.simple_command(com)
-        print(com,value)
+        #print(com,value)
         return value
 
     def getUpTime(self):
@@ -52,6 +68,9 @@ class Server():
     def getMemory(self):
         value = self.con.simple_command("free -m")
         return value
+
+class LogbackError(OctoError):
+    pass
 
 class LogbackFile():
     '''
@@ -65,11 +84,29 @@ class LogbackFile():
         pass the connection object.
         '''
         self.con = con
-        f = con.openFile(self.path)
-        val = f.uread()
-        f.close()
-        self.lb_string = val
-        self.lb = logback.Logback(val)
+        self.loaded = False
+        loading = True
+        lap = 0
+        while loading:
+            f = con.openFile(self.path)
+            val = f.uread()
+            f.close()
+            self.lb_string = val
+            try:
+                self.lb = logback.Logback(val)
+            except ValueError as e:
+                if lap == 0:
+                    print("Value error while loading logback. "+
+                          "This is probably due to it being corrupt."+
+                          " Attepting to restore...")
+                    self.con.simple_sudo("cp {0}.bak {0}".format(self.path))
+                    lap += 1
+                    continue
+                print("Can't fix. aborting")
+                break
+                
+            loading = False
+            self.loaded = True
         
     def getLoggers(self):
         '''
@@ -131,7 +168,7 @@ class Catalina():
 def encrypt(val,salt=None):
     if not salt:
         salt = get_salt()
-    print(salt)
+    #print(salt)
     ints = [ord(i) for i in val]
     hashed = [i^salt for i in ints]
     ret = ','.join([str(i) for i in hashed])
@@ -140,7 +177,7 @@ def encrypt(val,salt=None):
 def decrypt(val,salt=None):
     if not salt:
         salt = get_salt()
-    print(salt)
+    #print(salt)
     ints = val.split(',')
     nashed = [int(i)^salt for i in ints]
     ret = ''.join([chr(i) for i in nashed])

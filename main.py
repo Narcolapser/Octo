@@ -1,6 +1,7 @@
 #python imports
 import json
 from os.path import join
+import os
 
 #Kivy Imports.
 import kivy
@@ -32,29 +33,29 @@ from kivy.uix.tabbedpanel import TabbedPanelHeader
 from info_panel import Info_Panel
 from logback_panel import Logback_Panel
 from catalina_panel import Catalina_Panel
+from sql_panel import SQL_Panel
 from model import *
-
-#Later I want to replace this with a proper settings system.
-hosts = json.load(open("hosts.ini"))
+from log_manager import *
 
 class Octo(TabbedPanel):
     '''
     The main Octo class. A tabbed panel with tabs for each connection to a server.
     '''
     serverTab = ObjectProperty(None)
-    
-    def addServers(self):
+
+    def build(self):
         '''
-        This method is called to create the servers tab and add the servers to it.
+        get everything ready.
         '''
         self.serverTab.text = "Servers"
-        self.serverTab.addServers()
+        
+        self.logManager = LogManager()
+        gstore.logManager = self.logManager
 
     def addServer(self,config):
         '''
         This method is called to create with a config to add it to the servers tab.
         '''
-        self.serverTab.text = "Servers"
         self.serverTab.addServer(config)
 
     def add_connection(self,val):
@@ -63,7 +64,7 @@ class Octo(TabbedPanel):
         then is passed to the OctoServer object that is created.
         '''
         OServ = OctoServer()
-        OServ.connect(val)
+        OServ.connect(val,self.data_dir)
         OServ.text = val['name']
         OServ.load_panels()
         self.add_widget(OServ)
@@ -75,17 +76,6 @@ class OctoServersTab(TabbedPanelItem):
     The default tab that has the servers as tiles. 
     '''
     grid = ObjectProperty(None)
-
-    def addServers(self):
-        '''
-        This method reads the hosts from json that was read in by hosts.ini. Then creates tiles for
-        each of the hosts. Right now just buttons. hopefully in the future they'll be a cooler.
-        '''
-        for host in hosts:
-            o = OctoLauncher()
-            o.text = host
-            o.config = hosts[host]
-            self.grid.add_widget(o)
 
     def addServer(self,con):
         '''
@@ -99,8 +89,6 @@ class OctoServersTab(TabbedPanelItem):
             self.grid.add_widget(o)
         except Exception as e:
             print(e)
-        
-        
 
 class OctoServer(TabbedPanelItem):
     '''
@@ -110,29 +98,44 @@ class OctoServer(TabbedPanelItem):
     '''
     info_panel = ObjectProperty(None)
 
-    def connect(self,configs):
+    def connect(self,configs,data_dir):
         '''
         Create the connection that the info panels will use.
         '''
-        self.server = Server(configs)
+        self.server = Server(configs,data_dir)
     
     def load_panels(self):
         '''
         Instantiate and load the info panels into the display. Note that the order they are
         displayed is opposite the order that they are entered below.
         '''
-        ip = Info_Panel()
-        ip.setServer(self.server)
-        self.info_panel.add_widget(ip)
+        try:
+            ip = Info_Panel()
+            ip.setServer(self.server)
+            self.info_panel.add_widget(ip)
+        except:
+            pass
         
-        lb = Logback_Panel()
-        lb.setServer(self.server)
-        self.info_panel.add_widget(lb)        
+        try:
+            lb = Logback_Panel()
+            lb.setServer(self.server)
+            self.info_panel.add_widget(lb)  
+        except:
+            pass      
 
-        cp = Catalina_Panel()
-        cp.setServer(self.server)
-        self.info_panel.add_widget(cp)
-        
+        try:
+            cp = Catalina_Panel()
+            cp.setServer(self.server)
+            self.info_panel.add_widget(cp)
+        except:
+            pass
+
+##        try:
+        sql = SQL_Panel()
+        sql.setServer(self.server)
+        self.info_panel.add_widget(sql)
+##        except Exception as e:
+##            print(e)
 
 class OctoLauncher(Button):
     pass
@@ -140,7 +143,7 @@ class OctoLauncher(Button):
 class OctoOverlay(FloatLayout):
     octo = ObjectProperty(None)
     sb = ObjectProperty(None)
-    settings_string = StringProperty(u'...')#Things I wanted: ⚙⋮≡
+    settings_string = StringProperty(u'...')#Things I wanted: 
     
     data_dir = ''
 
@@ -189,6 +192,9 @@ class OctoApp(App):
         self.octo = octo_over.octo
         self.octo_over = octo_over
         self.octo_over.data_dir = self.data_dir
+        self.octo.data_dir = self.data_dir
+        gstore.data_dir = self.data_dir
+        self.octo.build()
         octo_over.loadServers()
 
         return octo_over
@@ -219,3 +225,5 @@ appPointer = None
 if __name__ == '__main__':
     appPointer = OctoApp()
     appPointer.run()
+
+#Soli Dei Gloria

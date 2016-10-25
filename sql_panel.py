@@ -1,17 +1,25 @@
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
+from kivy.uix.treeview import TreeView, TreeViewNode
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
 
 import model
+import log_manager
 
-class Logback_Panel(ScrollView):
+class Query():
+    pass
+
+class ArgSet():
+    pass
+
+class SQL_Panel(ScrollView):
     '''
     The logback panel is used to turn logs on and off as well as adjust the error level of each one
     and the default error level.
     '''
     grid = ObjectProperty(None)
+    active = BooleanProperty(False)
     def setServer(self,server):
         '''
         Save the local variables needed. Server specifically, but also this method spins up an
@@ -19,33 +27,28 @@ class Logback_Panel(ScrollView):
         '''
         self.server = server
         self.logback = model.LogbackFile(server.con)
+        loggers = self.logback.getLoggers()
+        self.loggers = []
 
-        if self.logback.loaded:
-            loggers = self.logback.getLoggers()
-            self.loggers = []
-            for i in loggers:
-                l = Logback_Logger()
-                l.load_logger(i)
-                self.loggers.append(l)
-                self.grid.add_widget(l)
-        else:
-            l = Label(text='Failed to load logback')
-            self.grid.add_widget(l)
+        for i in loggers:
+            if i.name == 'org.hibernate.SQL':
+                self.ohsql = i
+            if i.name == 'org.hibernate.type':
+                self.ohtype = i
 
-    def save_logback(self):
-        '''
-        Save the logback now that you've updated what you want.
-        '''
-        self.logback.save()
+        self.active = not (self.ohsql.commented and self.ohtype.commented)
 
-class Logback_Logger(GridLayout):
-    '''
-    View class for the individual loggers. 
-    '''
+        self.load_queries()
 
-    name = StringProperty('Loading...')
-    active = BooleanProperty(False)
-    level = StringProperty('Loading...')
+    def load_queries(self):
+##        self.logFile = model.LogFile(self.server.logdb,
+##                     self.server.con,
+##                     self.server.address,
+##                     'portal.log')
+        self.logFile = model.gstore.logManager.openLog(
+            '/usr/local/tomcat/logs/portal/portal.log',self.server.con)
+
+        
 
     def load_logger(self,logger):
         '''
@@ -64,16 +67,23 @@ class Logback_Logger(GridLayout):
         called whenever the status of the activity toggle changes. This method makes sure that the
         underlying logger get's the memo.
         '''
-        self.active = self.ids['activity_switch'].active
+        self.active = self.ids['logback_switch'].active
         if self.active:
-            self.logger.commented = False
+            self.ohsql.commented = False
+            self.ohtype.commented = False
+            self.logback.save()
         else:
-            self.logger.commented = True
+            self.ohsql.commented = True
+            self.ohtype.commented = True
+            self.logback.save()
         return self.active
-        
 
+class SQL_Query(TreeViewNode):
+    pass
+
+#Select * from logs where parent in (select parent from logs where line like '%org.hibernate.SQL%')
 kv = '''
-<Logback_Panel>:
+<SQL_Panel>:
     grid: log_grid
     canvas:
         Color:
@@ -95,32 +105,20 @@ kv = '''
         GridLayout:
             height: 50
             size_hint_y: None
-            cols: 3
-            Label:
-                text: 'name of logger'
-            Label:
-                text: 'Is logger active?'
-            Label:
-                text: 'Logging Level'
-        Button:
-            height: 50
-            size_hint_y: None
-            text: 'Save'
-            on_press: root.save_logback()
+            cols: 1
+            GridLayout:
+                cols: 2
+                Label:
+                    text: 'Turn logging on?'
+                Switch:
+                    id: logback_switch
+                    active: root.active
+                    on_active: root.toggle_me()
+            
 
-<Logback_Logger>:
-    cols:3
-    height: 50
-    size_hint_y: None
-    Label:
-        text_size: self.width, None
-        text: root.name
-    Switch:
-        id: activity_switch
-        active: root.active
-        on_active: root.toggle_me()
-    Label:
-        text: root.level
+<SQL_Query>:
+    
+    
         
 '''
 

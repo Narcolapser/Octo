@@ -1,0 +1,12 @@
+Made a lot of progress today. I've gotten the logs downloading and saving locally in a way that they'll be accessible from multiple panels, which keeps me from downloading multiples of the same log. and when the logs are many hundred megs, that can really add up.
+
+The way I've done it may prove to be a bottle neck, but at least there is no "database locked" errors.
+
+I've not actually done much yet on the SQL panel. I mostly need to get the content that will be displayed in first though so it's appropriate. I've laid the foundation for a lot of other good work in the near future. Specifically the logs in the databases. When I get around to making the log searching panel, this will allow me to build out it's functionality quite quickly.
+
+Had a really really clever if statement:
+if True in [j in i[;10] for j in log_levels]:
+
+this statement checks to see if the beginning of the line is one of the log levels. but I couldn't directly do that, I had to be more crafty. This checks to see if the log level is at the begining of the line, it returns true if it is. If none of the log levels start the line, then it's not a primary log, but a tracer. It's clever, but doing the list comprehension on each line as it enters sounds like it would be a drain on resources.
+
+

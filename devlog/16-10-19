@@ -1,0 +1,9 @@
+I've gotten some of the details hammered out that I was wanting to get to. I've even compiled the apk and put it on Iron and confirmed that it's all good. Specifically that you can go to a different app, and come back, and Octo will pick up where it left off. Also, servers are now configured with the app, not shipped hard coded in. Progress!
+
+There are a few settings things I still want to hash out. One is the add new server window is terrible. But I want to also add an "edit server" option. This will come along with upgrading the launchers I believe. The launchers are going to get an overhaul. Right now they just say the server name on them, but I want to do so much more. Specifically, I want to put several more buttons on them. Mostly so there is an "Open" button and an "edit" button. But also I want it to display some quick facts. 
+
+For example: If loading the information from the json store fails, I want there to be a place holder there so you can go into the edit server and try to fix it, or delete the server.
+
+Also, a simple little circle to indicate status: Green is the service is up, yellow is the service is down. Red is the server is down, and black: something is borked. 
+
+But I really also need to move onto the meat next. Get a log reader up and running and then I can put old Octo to bed.
