@@ -1,7 +1,7 @@
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
-from kivy.uix.treeview import TreeView, TreeViewNode
+from kivy.uix.treeview import TreeView, TreeViewNode, TreeViewLabel
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
 from kivy.clock import Clock
@@ -25,7 +25,8 @@ class SQL_Panel(ScrollView):
     grid = ObjectProperty(None)
     active = BooleanProperty(False)
     query = "Select * from logs where parent in (select parent from logs where line like '%org.hibernate.SQL%') ORDER BY parent"
-    get_parents = "(select parent from logs where line like '%org.hibernate.SQL%')"
+    get_parents = "select parent from logs where line like '%org.hibernate.SQL%'"
+    get_exclusive_parents = "select parent from logs where line like '%org.hibernate.SQL%' and parent not in ({0})"
     parent_query = "Select * from logs where parent is {0}"
     def setServer(self,server):
         '''
@@ -53,48 +54,71 @@ class SQL_Panel(ScrollView):
 
         self.query_list_hashes = []
         self.query_list = []
+        self.query_nodes = {}
         self.updating = False
+        self.parents = []
+        
         Clock.schedule_interval(self.update,1)
 
     def update(self, *args):
+
+        #this makes sure only one update process is running at a time.
         if self.updating == True:
             return
         self.updating = True
-        a = self.logFile.query(self.query)
-        try:
-            current = a[0][4]
-            print(a[0])
-            query = ''
-            for i in a:
-                if i[4] in self.query_list:
-                    continue
-                if i[4] == current:
-                    query += '\n' + i[2]
-                else:
-                    q_hash = hash(query)
-                    if q_hash not in self.query_list_hashes:
-                        l = Label(text=query)
-                        l.size_hint_y = None
-                        l.height = 400
-                        self.grid.add_widget(l)
-                        self.query_list.append(i[4])
-                        print(self.query_list)
-                    else:
-                        self.query_list_hashes.append(q_hash)
-                    current = i[4]
-                    query = i[2]
-                    
-##                if hash(i[2]) not in self.query_list:
-##                    print(hash(i[2]))
-##                    l = Label(text=i[2])
-##                    l.size_hint_y = None
-##                    l.height = 20
-##                    self.grid.add_widget(l)
-##                    self.query_list.append(hash(i[2]))
-            #print(self.query_list)
-        except:
-            pass
+
+        #Get the list of parents into a string form.
+        p_list = ','.join([str(i) for i in self.parents])
+
+        #query for the queries we don't already have
+        parents = self.logFile.query(self.get_exclusive_parents.format(p_list))
+
+        #save those to the raw parents list. May get ride of this later.
+        self.parents_raw = parents
+
+        #Process the new queries:
+        for p in parents:
+            self.parents.append(p[0])
+            self.process_query(p[0])
+
         self.updating = False
+
+
+    def process_query(self,parent):
+        query_raw = self.logFile.query(self.parent_query.format(parent))
+        query = ''
+        #for i in query_raw[1:]:
+        #    query += '\n' + i[2]
+        query = '\n'.join([i[2] for i in query_raw[1:]])
+
+        query = self.clean_query(query)
+        q_hash = hash(query)
+        if q_hash not in self.query_list_hashes:
+            self.query_list_hashes.append(q_hash)
+            self.query_list.append(query)
+
+            node = self.query_tree.add_node(TreeViewLabel(text=self.get_from(query)))
+            self.query_nodes[q_hash] = node
+            self.query_tree.add_node(TreeViewLabel(text=query),node)
+        
+    def clean_query(self,query):
+        '''
+        This method translates the portal queries into quries that can be directly run on our
+        ms sql servers. Or at least it will. Right now it's just a place holder.
+        '''
+        return query
+
+    def get_from(self,query):
+        '''
+        I mostly made this to get a snippet to make the query preview short.
+        '''
+        q_split = query.split('\n')
+        for i,j in enumerate(q_split):
+            if "from" in j:
+                return q_split[0] + " " + j + " " + q_split[i+1] + "..."
+            elif "update" in j:
+                return j + " " + q_split[i+1] + "..."
+        return q_split[1]
 
     def load_logger(self,logger):
         '''
@@ -131,6 +155,7 @@ class SQL_Query(TreeViewNode):
 kv = '''
 <SQL_Panel>:
     grid: log_grid
+    query_tree: qt
     canvas:
         Color:
             rgba: 0.5,0.5,0.5,0.7
@@ -160,6 +185,10 @@ kv = '''
                     id: logback_switch
                     active: root.active
                     on_active: root.toggle_me()
+        TreeView:
+            id: qt
+            height: self.minimum_height
+            size_hint_y: None
             
 
 <SQL_Query>:

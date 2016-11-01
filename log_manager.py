@@ -125,5 +125,5 @@ class LogFile():
                       (self.row_count,self.logID,i,log_type,tracer))
             self.row_count += 1
 
-        print(self.row_count)
+        #print(self.row_count)
         self.db.closeCursor(c)
