@@ -109,13 +109,13 @@ class OctoServer(TabbedPanelItem):
         Instantiate and load the info panels into the display. Note that the order they are
         displayed is opposite the order that they are entered below.
         '''
-        try:
-            ip = Info_Panel()
-            ip.setServer(self.server)
-            self.info_panel.add_widget(ip)
-        except:
-            pass
-        
+##        try:
+##            ip = Info_Panel()
+##            ip.setServer(self.server)
+##            self.info_panel.add_widget(ip)
+##        except:
+##            pass
+##        
         try:
             lb = Logback_Panel()
             lb.setServer(self.server)
@@ -123,12 +123,12 @@ class OctoServer(TabbedPanelItem):
         except:
             pass      
 
-        try:
-            cp = Catalina_Panel()
-            cp.setServer(self.server)
-            self.info_panel.add_widget(cp)
-        except:
-            pass
+##        try:
+##            cp = Catalina_Panel()
+##            cp.setServer(self.server)
+##            self.info_panel.add_widget(cp)
+##        except:
+##            pass
 
 ##        try:
         sql = SQL_Panel()

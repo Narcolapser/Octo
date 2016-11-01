@@ -36,6 +36,7 @@ class Logback_Panel(ScrollView):
         '''
         Save the logback now that you've updated what you want.
         '''
+        print("Saving log back.")
         self.logback.save()
 
 class Logback_Logger(GridLayout):

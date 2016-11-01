@@ -47,6 +47,7 @@ class LogManager():
         self.db.commit()
         self.lock.release()
 
+
 class LogFile():
     def __init__(self,db,connection,logID,path):
         self.db = db
@@ -57,6 +58,17 @@ class LogFile():
         self.row_count = 0
 
         self.populate()
+
+    def query(self,query):
+        c = self.db.getCursor()
+
+        c.execute(query)
+
+        val = c.fetchall()
+
+        self.db.closeCursor(c)
+
+        return val
 
     def populate(self):
         self.file = self.connection.openFile(self.path)
