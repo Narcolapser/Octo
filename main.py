@@ -197,6 +197,8 @@ class OctoApp(App):
         self.octo.build()
         octo_over.loadServers()
 
+        self.icon = 'simple Octo.png'
+
         return octo_over
 
     def on_pause(self):

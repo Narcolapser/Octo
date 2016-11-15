@@ -9,23 +9,22 @@ a uPortal utility program that I wrote because I'm going batty with all these gr
 Features working:
 *	Load servers and authentication from file
 *	Connect to servers and display available logs
-*	Define what logs you are interested in by entering them into the config file.
+*	Fix filters to leverage the SQL backend
+*	Edit logging files to turn certain logs on and off
+*	Add servers dynamically
+
+Features to work on:
 *	Filter contents of the logs
 *	Download Log file
 *	Download Multiple Log Files
 *	Copy selected section of log file.
-*	Fix threading so the UI doesn't freeze when the treeview is being populated.
-*	Fix filters to leverage the SQL backend
-*	Edit logging files to turn certain logs on and off
-
-Features to work on:
 *	Nest logs: there are instances of the same log for different days. I'd like to
 		nest these so they are all available, but still compact.
 *	Add logfiles dynamically
-*	Add servers dynamically
 *	Zip Files before downloading
 *	Keep logs up to date: no information from after you open the file for the first time gets pulled in.
 *	Progress bar on log file being opened/downloaded.
+*	Modularize the panels so you can choose which panels you want to load or not. (also makes making new ones easier)
 
 Some dream features:
 *	Re-deploy Portlets
