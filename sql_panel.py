@@ -9,13 +9,8 @@ from kivy.clock import Clock
 import model
 import log_manager
 
-class Query():
-    pass
-
 class ArgSet():
     pass
-
-
 
 class SQL_Panel(ScrollView):
     '''
@@ -53,7 +48,7 @@ class SQL_Panel(ScrollView):
             '/usr/local/tomcat/logs/portal/portal.log',self.server.con)
 
         self.query_list_hashes = []
-        self.query_list = []
+        self.query_list = {}
         self.query_nodes = {}
         self.updating = False
         self.parents = []
@@ -61,7 +56,6 @@ class SQL_Panel(ScrollView):
         Clock.schedule_interval(self.update,1)
 
     def update(self, *args):
-
         #this makes sure only one update process is running at a time.
         if self.updating == True:
             return
@@ -79,34 +73,30 @@ class SQL_Panel(ScrollView):
         #Process the new queries:
         for p in parents:
             self.parents.append(p[0])
-            self.process_query(p[0])
+            qhash, query = self.process_query(p[0])
+            
+            if qhash in self.query_list_hashes:
+                #self.query_list[qhash].ids.append(p[0])
+                self.query_list[qhash].add_instance(p[0])
+                
+            else:
+                self.query_list_hashes.append(qhash)
+                self.query_list[qhash] = SQL_Query(qhash,query,p[0],self)
 
         self.updating = False
 
 
     def process_query(self,parent):
+        '''
+        Take the given number, find all the parts of the query, and then string them together into
+        one piece. This also returns the hash for that query to make use in dictionaries easier.
+        '''
         query_raw = self.logFile.query(self.parent_query.format(parent))
         query = ''
-        #for i in query_raw[1:]:
-        #    query += '\n' + i[2]
         query = '\n'.join([i[2] for i in query_raw[1:]])
 
-        query = self.clean_query(query)
         q_hash = hash(query)
-        if q_hash not in self.query_list_hashes:
-            self.query_list_hashes.append(q_hash)
-            self.query_list.append(query)
-
-            node = self.query_tree.add_node(TreeViewLabel(text=self.get_from(query)))
-            self.query_nodes[q_hash] = node
-            self.query_tree.add_node(TreeViewLabel(text=query),node)
-        
-    def clean_query(self,query):
-        '''
-        This method translates the portal queries into quries that can be directly run on our
-        ms sql servers. Or at least it will. Right now it's just a place holder.
-        '''
-        return query
+        return (q_hash,query)
 
     def get_from(self,query):
         '''
@@ -117,6 +107,8 @@ class SQL_Panel(ScrollView):
             if "from" in j:
                 return q_split[0] + " " + j + " " + q_split[i+1] + "..."
             elif "update" in j:
+                return j + " " + q_split[i+1] + "..."
+            elif "into" in j:
                 return j + " " + q_split[i+1] + "..."
         return q_split[1]
 
@@ -148,10 +140,147 @@ class SQL_Panel(ScrollView):
             self.logback.save()
         return self.active
 
-class SQL_Query(TreeViewNode):
-    pass
+class SQL_Query():
+    parent_query = "Select * from logs where parent is {0}"
+    args = "SELECT * FROM logs WHERE ID = {0}"
+    def __init__(self,qhash,query,qid,parent):
+        self.qhash = qhash
+        self.query = query
+        self.ids = [qid]
+        self.parent = parent
+        
+        node = parent.query_tree.add_node(TreeViewLabel(text=parent.get_from(query)))
+        parent.query_nodes[qhash] = node
+        parent.query_tree.add_node(TreeViewLabel(text=query),node)
+        self.instances = {}
 
-#Select * from logs where parent in (select parent from logs where line like '%org.hibernate.SQL%')
+    def add_instance(self,qid):
+        '''
+        Adds an instance of a particular query. This way we can see not only the queries but also
+        the values and results they run with. Doing this in a tree view keeps it compact.
+        '''
+        #Save the query id.
+        self.ids.append(qid)
+        #set a session id, this will be used to find parameters and results.
+        sid = qid + 1
+        #Get past the query.
+        res = self.parent.logFile.query(self.args.format(sid))
+        while res[0][3] != 0: #when res[0][3] = 0 we will be at log entries that are "TRACE"
+            sid += 1
+            res = self.parent.logFile.query(self.args.format(sid))
+
+        #necessary temp bits
+        rows = []
+        parameters = []
+        results = {}
+
+        #these time stamps that show up along side parameters and results. 
+        time_stamps = ('TIME_ID1_21_','TD_FIVE_2_21_','TD_HOUR3_21_','TD_MINUT4_21_','TD_TIME5_21_')
+        while len(res) > 0 and res[0][3] == 0:
+            sid += 1
+            #in order to ignore those time stamps we must check to see if this entry is one.
+            is_time_stamp = False
+            for ts in time_stamps:
+                #this establishes whether or not it is a time stamp
+                is_time_stamp |= ts in res[0][2]
+            if is_time_stamp:
+                #if it is a time stamp, get the next query and continue.
+                res = self.parent.logFile.query(self.args.format(sid))
+                #I might be able to make thie a break in the future. I'm pretty sure time stamps
+                # won't happen until after the parameters and results are past.
+                continue
+
+            #potentially un-needed now.
+            rows.append(res)
+
+            #Find the paramaters for this query
+            if "BasicBinder" in res[0][2]:
+                #get the paramater number
+                pnum = 0
+                start = res[0][2].find("binding parameter [") + len('binding parameter [')
+                end = res[0][2].find('] as [',start)
+                pnum = int(res[0][2][start:end])
+
+                #get paramater value:
+                pval = ''
+                start = res[0][2].find('] - ') + len('] - ')
+                pval = res[0][2][start:]
+                parameters.append((pnum,pval))
+
+            #Find the results of this query
+            if "BasicExtractor" in res[0][2]:
+                #Get the value:
+                rval = ''
+                start = res[0][2].find("Found [") + len('Found [')
+                end = res[0][2].find('] as column [')
+                rval = res[0][2][start:end]
+
+                #Get the Column:
+                rcol = ''
+                start = res[0][2].find('] as column [') + len('] as column [')
+                rcol = res[0][2][start:-1]
+
+                if rcol in results.keys():
+                    results[rcol].append(rval)
+                else:
+                    results[rcol] = [rval]
+                
+            #get the next entry.
+            res = self.parent.logFile.query(self.args.format(sid))
+
+            #end while loop.
+        #save the query in a convenient class wrapper.
+        self.instances[qid] = Query(parameters,results)
+        #insert the new instance into the treeview.
+        self.parent.query_tree.add_node(TreeViewLabel(
+            text=str(self.instances[qid])),
+            self.parent.query_nodes[self.qhash])
+
+class Query():
+    def __init__(self,parameters,results):
+        self.parameters = parameters
+        self.results = results
+
+    def __str__(self):
+        ret = ''
+        #format the paramaters
+        ret += 'Quried with paramaters:\n'
+        for p in self.parameters:
+            ret += p[1] + '\n'
+
+
+        #format the results
+        ret += 'Returned the values:\n'
+
+        #This is basically a translation. The data is currently a list under a column name. This
+        # for loop translates it into a list of rows, each with it's own list of column names.
+        rows = []
+        for i in self.results.keys():
+            for n,j in enumerate(self.results[i]):
+                if len(rows) < n + 1:
+                    rows.append({i:j})
+                else:
+                    rows[n][i] = j
+
+        #print out the column heads.
+        for i in self.results.keys():
+            ret += i + '        '
+        ret += '\n'
+
+        #print out the row values. Hopefully these match the column heads...
+        for i in self.results.keys():
+            for j in rows:
+                ret += j[i] + '        '
+
+        #for good measure
+        ret += '\n'
+        
+        return ret
+        
+        
+     
+
+
 kv = '''
 <SQL_Panel>:
     grid: log_grid
