@@ -131,7 +131,7 @@ class LogbackFile():
 
         #Now that the file is on the server and we know there is a backup. Let's copy the
         #logback.xml file from the home directory to the actual directory.
-        self.con.simple_sudo("cp logback.xml {0}".format(self.path))
+        print(self.con.simple_sudo("cp ~/logback.xml {0}".format(self.path)))
             
 
 class LBAppender():

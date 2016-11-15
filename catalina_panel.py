@@ -1,6 +1,7 @@
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.label import Label
 from kivy.lang import Builder
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.properties import ObjectProperty, StringProperty, NumericProperty
 from kivy.clock import Clock
 
 import model
@@ -14,6 +15,7 @@ class Catalina_Panel(ScrollView):
     going on for each server.
     '''
     text = StringProperty("")
+    g_width = NumericProperty(750)
     def setServer(self,server):
         '''
         Set the server object for this catalina object.
@@ -21,6 +23,8 @@ class Catalina_Panel(ScrollView):
         self.server = server
         self.cat = model.Catalina(self.server.con)
         self.text = self.cat.content
+        self.lines = []
+        self.cl = []
 
         #check for new content once a second.
         Clock.schedule_interval(self.update,1)
@@ -32,11 +36,30 @@ class Catalina_Panel(ScrollView):
         where, then don't automatically scroll them down.
         '''
         at_bottom = self.scroll_y < 0.01
-        self.text = self.cat.update()
+        self.g_width = self.ids['content_grid'].size[0]
         if at_bottom:
             self.scroll_y = 0
             self.update_from_scroll()
+        
+        self.text = self.cat.update()
+        for line in self.text.split('\n')[:-1]:
+            if hash(line) in self.lines:
+                continue
+            l = ContentLabel(text=line)
+            l.g_width = self.g_width
+            
+            self.ids['content_grid'].add_widget(l)
+            self.cl.append(l)
+            self.lines.append(hash(line))
 
+        for l in self.cl:
+            l.g_width = self.ids['content_grid'].size[0]
+
+
+class ContentLabel(Label):
+    g_width = NumericProperty(750)
+
+#height: self.texture_size[1]
 kv = '''
 <Catalina_Panel>:
     canvas:
@@ -50,13 +73,18 @@ kv = '''
         Rectangle:
             size: self.size[0] - 20, self.size[1] - 20
             pos: self.pos[0] + 10, self.pos[1] + 10
-    Label:
-        text: root.text
+    GridLayout:
+        cols: 1
+        id: content_grid
         pos: 10,10
-        text_size: self.width-20, None
         size_hint_y: None
-        height: self.texture_size[1]
-        
+        height: self.minimum_height
+
+<ContentLabel>:
+    text_size: self.g_width,None
+    halign: 'left'
+    size_hint_y: None
+    
 '''
 
 Builder.load_string(kv)

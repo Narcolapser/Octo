@@ -140,11 +140,12 @@ class Connection():
             cp here there
         and this command will take care of the rest.
         '''
-        #print(com)
         stdin, stdout, stderr = self.con.exec_command("sudo " + com, get_pty=True)
         stdin.write(self.password+"\n")
-        #print(stdout.readlines())
-        #print(stdout.readlines())
+        
+        #appearently this is necessary to get it to actually take the password.
+        stdout.readlines()
+        
 
     def __con_lock(self):
         '''
