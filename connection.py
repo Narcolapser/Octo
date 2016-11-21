@@ -26,6 +26,8 @@ import time
 import threading
 import sys
 
+from kivy.logger import Logger
+
 
 class Connection():
     def __init__(self,addr,user,password,name,limit=20):
@@ -191,7 +193,7 @@ class ConFile():
 #            print("file does not exist: {0}".format(path))
         except Exception as e:
             self.file = None
-            print("Something has gone wrong retriving file:{0}".format(e))
+            Logger.error("Octo.con: Something has gone wrong retriving file:{0}".format(e))
 
     def close(self):
         self.file.close()
@@ -203,8 +205,9 @@ class ConFile():
             lastEdit = time.localtime(lastEdit.st_mtime)
             lastEdit = time.strftime("%Y-%m-%d",lastEdit)
             return lastEdit
-        except FileNotFoundError as e:
-            print("Cannot see last edit as file does not exist: {0}".format(self.path))
+        #except FileNotFoundError as e:
+        except Exception as e:
+            Logger.error("Octo.con: Cannot see last edit as file does not exist: {0}".format(self.path))
             return None
 
     def checkExists(self):

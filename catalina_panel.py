@@ -4,6 +4,8 @@ from kivy.lang import Builder
 from kivy.properties import ObjectProperty, StringProperty, NumericProperty
 from kivy.clock import Clock
 
+from kivy.logger import Logger
+
 import model
 
 #Todo: When the content is first loaded, I don't think all the data get's pulled, something is a
@@ -57,7 +59,7 @@ class ContentLabel(Label):
     def __init__(self, cp, **kwargs):
         self.cp = cp
         super(ContentLabel, self).__init__(**kwargs)
-        print(cp)
+        Logger.debug('Catalina Panel: new label {0}'.format(cp))
 
         
         

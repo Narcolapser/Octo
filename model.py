@@ -99,13 +99,13 @@ class LogbackFile():
                 self.lb = logback.Logback(val)
             except ValueError as e:
                 if lap == 0:
-                    print("Value error while loading logback. "+
+                    Logger.info(("Octo.model: Value error while loading logback. "+
                           "This is probably due to it being corrupt."+
-                          " Attepting to restore...")
+                          " Attepting to restore..."))
                     self.con.simple_sudo("cp {0}.bak {0}".format(self.path))
                     lap += 1
                     continue
-                print("Can't fix. aborting")
+                Logger.error("Octo.model: Can't fix logback. aborting")
                 break
                 
             loading = False
@@ -134,7 +134,7 @@ class LogbackFile():
 
         #Now that the file is on the server and we know there is a backup. Let's copy the
         #logback.xml file from the home directory to the actual directory.
-        print(self.con.simple_sudo("cp ~/logback.xml {0}".format(self.path)))
+        self.con.simple_sudo("cp ~/logback.xml {0}".format(self.path))
             
 
 class LBAppender():
