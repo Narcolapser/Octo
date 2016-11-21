@@ -11,9 +11,8 @@ import os
 import random
 import threading
 import hashlib
-import logging
 
-log = logging.getLogger(__name__)
+from kivy.logger import Logger
 
 log_levels = ["TRACE","DEBUG","INFO","WARNING","WARN","ERROR","SEVERE"]
 
@@ -23,7 +22,7 @@ class LogManager():
             os.remove(os.path.join(model.gstore.data_dir,"log.db"))
         except Exception as e:
         #    log.info("no database, skipping deleting")
-	    log.info("Error deleting database: {0}".format(e))
+            Logger.info("Octo.LM: Error deleting database: {0}".format(e))
 
         self.lock = threading.Lock()
 

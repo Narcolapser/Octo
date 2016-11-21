@@ -2,10 +2,6 @@
 import json
 from os.path import join
 import os
-import logging
-
-logging.basicConfig(filename='octo.log',level=logging.DEBUG)
-log = logging.getLogger(__name__)
 
 #Kivy Imports.
 import kivy
@@ -54,7 +50,7 @@ class Octo(TabbedPanel):
         '''
         get everything ready.
         '''
-        self.serverTab.text = "Servers"
+        self.serverTab.text = 'Servers'
         
         self.logManager = LogManager()
         gstore.logManager = self.logManager
@@ -95,7 +91,7 @@ class OctoServersTab(TabbedPanelItem):
             o.config=con
             self.grid.add_widget(o)
         except Exception as e:
-            log.error("Error adding server: {0}".format(e))
+            Logger.error('Octo: Error adding server: {0}'.format(e))
 
 class OctoServer(TabbedPanelItem):
     '''
@@ -120,29 +116,33 @@ class OctoServer(TabbedPanelItem):
             ip = Info_Panel()
             ip.setServer(self.server)
             self.info_panel.add_widget(ip)
+            Logger.info('Octo: Loaded Info Panel')
         except Exception as e:
-            log.error('Error loading info panel: {0}'.format(e))
+            Logger.error('Octo: Error loading info panel: {0}'.format(e))
         
-	try:
+        try:
             lb = Logback_Panel()
             lb.setServer(self.server)
-            self.info_panel.add_widget(lb)  
+            self.info_panel.add_widget(lb)
+            Logger.info('Octo: Loaded Logback Panel')
         except Exception as e:
-            log.error('Error loading Logback panel: {0}'.format(e))
+            Logger.error('Octo: Error loading Logback panel: {0}'.format(e))
 
         try:
             cp = Catalina_Panel()
             cp.setServer(self.server)
             self.info_panel.add_widget(cp)
+            Logger.info('Octo: Loaded Catalina Panel')
         except Exception as e:
-            log.error('Error loading catalina panel: {0}'.format(e))
+            Logger.error('Octo: Error loading catalina panel: {0}'.format(e))
 
         try:
             sql = SQL_Panel()
             sql.setServer(self.server)
             self.info_panel.add_widget(sql)
+            Logger.info('Octo: Loaded SQL Panel')
         except Exception as e:
-            log.error('Error loading SQL panel: {0}'.format(e))
+            Logger.error('Octo: Error loading SQL panel: {0}'.format(e))
 
 
 class OctoLauncher(Button):
@@ -195,6 +195,7 @@ class OctoEditServer(GridLayout):
 
 class OctoApp(App):
     def build(self):
+        Logger.info('Octo: Beginning Build')
         self.settings_cls = SettingsWithSidebar
         octo_over = OctoOverlay()
         self.octo = octo_over.octo
@@ -207,6 +208,7 @@ class OctoApp(App):
 
         #self.icon = 'simple Octo.png'
 
+        Logger.info('Octo: Build complete.')
         return octo_over
 
     def on_pause(self):

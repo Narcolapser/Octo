@@ -7,6 +7,8 @@ import os
 import random
 import tempfile
 
+from kivy.logger import Logger
+
 class Gstore(dict):
     pass
 
@@ -36,7 +38,8 @@ class Server():
         self.con = connection.Connection(self.address,self.username,self.password,self.hostname)
 
         self.PID = None
-        
+
+        Logger.info('Octo.model: New server loaded named {0}'.format(self.hostname))
 
     def getHostName(self):
         return self.hostname

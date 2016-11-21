@@ -1,7 +1,4 @@
 from threading import Thread, Lock
-import logging
-
-log = logging.getLogger(__name__)
 
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
@@ -11,6 +8,7 @@ from kivy.lang import Builder
 from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
 from kivy.clock import Clock
 from kivy.core.clipboard import Clipboard
+from kivy.logger import Logger
 
 import model
 import log_manager
@@ -63,22 +61,22 @@ class SQL_Panel(ScrollView):
         Clock.schedule_interval(self.thread_update,1)
 
     def thread_update(self,*args):
-        log.debug("Is there a running updater thread? {0}".format(self.updating.locked()))
+        Logger.debug("SQL Panel: Is there a running updater thread? {0}".format(self.updating.locked()))
         if self.updating.locked() == False:
-            log.debug("Preparing a new thread")
+            Logger.debug("SQL Panel: Preparing a new thread")
             t = Thread(target=self.update,args=args)
             t.start()
-            log.debug("Dispached thread")
-        log.debug("Done checking the updater.")
+            Logger.debug("SQL Panel: Dispached thread")
+        Logger.debug("SQL Panel: Done checking the updater.")
         
 
     def update(self, *args):
         #this makes sure only one update process is running at a time.
-        log.debug("Is an update process alread running?: {0}".format(self.updating.locked()))
+        Logger.debug("SQL Panel: Is an update process alread running?: {0}".format(self.updating.locked()))
         if self.updating.acquire(False) == False:
-            log.debug("Lock not acquired: {0}".format(self.updating.locked()))
+            Logger.debug("SQL Panel: Lock not acquired: {0}".format(self.updating.locked()))
             return
-        log.debug("Acquired lock:".format(self.updating.locked()))
+        Logger.debug("SQL Panel: Acquired lock:".format(self.updating.locked()))
         
         #Get the list of parents into a string form.
         p_list = ','.join([str(i) for i in self.parents])
@@ -103,7 +101,7 @@ class SQL_Panel(ScrollView):
                 self.query_list[qhash] = SQL_Query(qhash,query,p[0],self)
 
         self.updating.release()
-        log.debug("Done updating, toggling self.update to: {0}".format(self.updating.locked()))
+        Logger.debug("SQL Panel: Done updating, toggling self.update to: {0}".format(self.updating.locked()))
 
     def process_query(self,parent):
         '''
@@ -164,7 +162,7 @@ class SQL_Panel(ScrollView):
             try:
                 Clipboard.copy(self.query_tree.selected_node.text)
             except AttributeError:
-                log.debug("Object didn't have text.")
+                Logger.debug("SQL Panel: Object didn't have text.")
         ScrollView.on_touch_down(self, touch)
 
 
@@ -199,7 +197,7 @@ class SQL_Query():
                 sid += 1
                 res = self.parent.logFile.query(self.args.format(sid))
         except IndexError:
-            log.debug("List didn't contain appropriate number of entries: {0}".format(res))
+            Logger.debug("SQL Panel: List didn't contain appropriate number of entries: {0}".format(res))
             return
 
         #necessary temp bits
@@ -306,7 +304,7 @@ class Query():
                 try:
                     ret += j[i] + '        '
                 except KeyError:
-                    log.debug("Didn't find: {0} in {1}".format(i,j))
+                    Logger.debug("SQL Panel: Didn't find: {0} in {1}".format(i,j))
 
         #for good measure
         ret += '\n'
