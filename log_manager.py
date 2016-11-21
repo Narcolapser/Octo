@@ -21,8 +21,9 @@ class LogManager():
     def __init__(self):
         try:
             os.remove(os.path.join(model.gstore.data_dir,"log.db"))
-        except FileNotFoundError:
-            log.info("no database, skipping deleting")
+        except Exception as e:
+        #    log.info("no database, skipping deleting")
+	    log.info("Error deleting database: {0}".format(e))
 
         self.lock = threading.Lock()
 

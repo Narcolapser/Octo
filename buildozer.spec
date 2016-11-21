@@ -36,7 +36,7 @@ version = 0.3
 
 # (list) Application requirements
 # comma seperated e.g. requirements = sqlite3,kivy
-requirements = kivy,paramiko,ecdsa,datetime
+requirements = kivy,paramiko,ecdsa,datetime,sqlite3
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes

@@ -123,7 +123,7 @@ class OctoServer(TabbedPanelItem):
         except Exception as e:
             log.error('Error loading info panel: {0}'.format(e))
         
-        try:
+	try:
             lb = Logback_Panel()
             lb.setServer(self.server)
             self.info_panel.add_widget(lb)  
@@ -143,6 +143,7 @@ class OctoServer(TabbedPanelItem):
             self.info_panel.add_widget(sql)
         except Exception as e:
             log.error('Error loading SQL panel: {0}'.format(e))
+
 
 class OctoLauncher(Button):
     pass
@@ -204,7 +205,7 @@ class OctoApp(App):
         self.octo.build()
         octo_over.loadServers()
 
-        self.icon = 'simple Octo.png'
+        #self.icon = 'simple Octo.png'
 
         return octo_over
 
