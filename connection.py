@@ -187,10 +187,11 @@ class ConFile():
         try:
             self.sftp = parent.con.open_sftp()
             self.file = self.sftp.open(path,self.mode)
-        except FileNotFoundError as e:
-            print("file does not exist: {0}".format(path))
+#        except FileNotFoundError as e:
+#            print("file does not exist: {0}".format(path))
         except Exception as e:
-            print("Something has gone wrong retriving file")
+            self.file = None
+            print("Something has gone wrong retriving file:{0}".format(e))
 
     def close(self):
         self.file.close()
@@ -236,7 +237,9 @@ class ConFile():
         return ret
 
     def stat(self):
-        return self.file.stat()
+        if self.file:
+            return self.file.stat()
+        return None
 
     def tell(self):
         return self.file.tell()

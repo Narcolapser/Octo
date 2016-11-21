@@ -115,7 +115,7 @@ class OctoServer(TabbedPanelItem):
             self.info_panel.add_widget(ip)
         except Exception as e:
             print(e)
-        
+               
         try:
             lb = Logback_Panel()
             lb.setServer(self.server)
@@ -136,6 +136,7 @@ class OctoServer(TabbedPanelItem):
             self.info_panel.add_widget(sql)
         except Exception as e:
             print(e)
+
 
 class OctoLauncher(Button):
     pass
@@ -197,7 +198,7 @@ class OctoApp(App):
         self.octo.build()
         octo_over.loadServers()
 
-        self.icon = 'simple Octo.png'
+        #self.icon = 'simple Octo.png'
 
         return octo_over
 
