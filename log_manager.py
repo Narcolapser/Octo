@@ -11,6 +11,9 @@ import os
 import random
 import threading
 import hashlib
+import logging
+
+log = logging.getLogger(__name__)
 
 log_levels = ["TRACE","DEBUG","INFO","WARNING","WARN","ERROR","SEVERE"]
 
@@ -19,7 +22,7 @@ class LogManager():
         try:
             os.remove(os.path.join(model.gstore.data_dir,"log.db"))
         except FileNotFoundError:
-            print("no database, skipping deleting")
+            log.info("no database, skipping deleting")
 
         self.lock = threading.Lock()
 
@@ -27,6 +30,7 @@ class LogManager():
         c = self.db.cursor()
         c.execute("CREATE TABLE logs (ID integer, logID integer, line text, type integer, parent integer)")
 
+        self.db.close()
         self.logs = {}
 
     def openLog(self,path,connection):
@@ -40,11 +44,13 @@ class LogManager():
 
     def getCursor(self):
         self.lock.acquire()
+        self.db = sqlite3.connect(os.path.join(model.gstore.data_dir,"log.db"))
         return self.db.cursor()
 
     def closeCursor(self,cur):
         cur.close()
         self.db.commit()
+        self.db.close()
         self.lock.release()
 
 

@@ -1,3 +1,8 @@
+from threading import Thread, Lock
+import logging
+
+log = logging.getLogger(__name__)
+
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
@@ -5,6 +10,7 @@ from kivy.uix.treeview import TreeView, TreeViewNode, TreeViewLabel
 from kivy.lang import Builder
 from kivy.properties import ObjectProperty, StringProperty, BooleanProperty
 from kivy.clock import Clock
+from kivy.core.clipboard import Clipboard
 
 import model
 import log_manager
@@ -42,6 +48,7 @@ class SQL_Panel(ScrollView):
         self.active = not (self.ohsql.commented and self.ohtype.commented)
 
         self.load_queries()
+        self.bind(on_touch_down=self.on_touch_down)
 
     def load_queries(self):
         self.logFile = model.gstore.logManager.openLog(
@@ -50,17 +57,29 @@ class SQL_Panel(ScrollView):
         self.query_list_hashes = []
         self.query_list = {}
         self.query_nodes = {}
-        self.updating = False
+        self.updating = Lock()
         self.parents = []
         
-        Clock.schedule_interval(self.update,1)
+        Clock.schedule_interval(self.thread_update,1)
+
+    def thread_update(self,*args):
+        log.debug("Is there a running updater thread? {0}".format(self.updating.locked()))
+        if self.updating.locked() == False:
+            log.debug("Preparing a new thread")
+            t = Thread(target=self.update,args=args)
+            t.start()
+            log.debug("Dispached thread")
+        log.debug("Done checking the updater.")
+        
 
     def update(self, *args):
         #this makes sure only one update process is running at a time.
-        if self.updating == True:
+        log.debug("Is an update process alread running?: {0}".format(self.updating.locked()))
+        if self.updating.acquire(False) == False:
+            log.debug("Lock not acquired: {0}".format(self.updating.locked()))
             return
-        self.updating = True
-
+        log.debug("Acquired lock:".format(self.updating.locked()))
+        
         #Get the list of parents into a string form.
         p_list = ','.join([str(i) for i in self.parents])
 
@@ -83,8 +102,8 @@ class SQL_Panel(ScrollView):
                 self.query_list_hashes.append(qhash)
                 self.query_list[qhash] = SQL_Query(qhash,query,p[0],self)
 
-        self.updating = False
-
+        self.updating.release()
+        log.debug("Done updating, toggling self.update to: {0}".format(self.updating.locked()))
 
     def process_query(self,parent):
         '''
@@ -140,6 +159,15 @@ class SQL_Panel(ScrollView):
             self.logback.save()
         return self.active
 
+    def on_touch_down(self, touch):
+        if touch.is_double_tap:
+            try:
+                Clipboard.copy(self.query_tree.selected_node.text)
+            except AttributeError:
+                log.debug("Object didn't have text.")
+        ScrollView.on_touch_down(self, touch)
+
+
 class SQL_Query():
     parent_query = "Select * from logs where parent is {0}"
     args = "SELECT * FROM logs WHERE ID = {0}"
@@ -165,9 +193,14 @@ class SQL_Query():
         sid = qid + 1
         #Get past the query.
         res = self.parent.logFile.query(self.args.format(sid))
-        while res[0][3] != 0: #when res[0][3] = 0 we will be at log entries that are "TRACE"
-            sid += 1
-            res = self.parent.logFile.query(self.args.format(sid))
+
+        try:
+            while res[0][3] != 0: #when res[0][3] = 0 we will be at log entries that are "TRACE"
+                sid += 1
+                res = self.parent.logFile.query(self.args.format(sid))
+        except IndexError:
+            log.debug("List didn't contain appropriate number of entries: {0}".format(res))
+            return
 
         #necessary temp bits
         rows = []
@@ -270,7 +303,10 @@ class Query():
         #print out the row values. Hopefully these match the column heads...
         for i in self.results.keys():
             for j in rows:
-                ret += j[i] + '        '
+                try:
+                    ret += j[i] + '        '
+                except KeyError:
+                    log.debug("Didn't find: {0} in {1}".format(i,j))
 
         #for good measure
         ret += '\n'

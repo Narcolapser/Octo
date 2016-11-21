@@ -2,6 +2,10 @@
 import json
 from os.path import join
 import os
+import logging
+
+logging.basicConfig(filename='octo.log',level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 #Kivy Imports.
 import kivy
@@ -9,9 +13,12 @@ kivy.require('1.9.1')
 
 from kivy.app import App
 from kivy.config import ConfigParser
+from kivy.config import Config
 from kivy.storage.jsonstore import JsonStore
 
 from kivy.properties import ObjectProperty, StringProperty
+
+from kivy.logger import Logger
 
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
@@ -88,7 +95,7 @@ class OctoServersTab(TabbedPanelItem):
             o.config=con
             self.grid.add_widget(o)
         except Exception as e:
-            print(e)
+            log.error("Error adding server: {0}".format(e))
 
 class OctoServer(TabbedPanelItem):
     '''
@@ -114,28 +121,28 @@ class OctoServer(TabbedPanelItem):
             ip.setServer(self.server)
             self.info_panel.add_widget(ip)
         except Exception as e:
-            print(e)
+            log.error('Error loading info panel: {0}'.format(e))
         
         try:
             lb = Logback_Panel()
             lb.setServer(self.server)
             self.info_panel.add_widget(lb)  
         except Exception as e:
-            print(e)
+            log.error('Error loading Logback panel: {0}'.format(e))
 
         try:
             cp = Catalina_Panel()
             cp.setServer(self.server)
             self.info_panel.add_widget(cp)
         except Exception as e:
-            print(e)
+            log.error('Error loading catalina panel: {0}'.format(e))
 
         try:
             sql = SQL_Panel()
             sql.setServer(self.server)
             self.info_panel.add_widget(sql)
         except Exception as e:
-            print(e)
+            log.error('Error loading SQL panel: {0}'.format(e))
 
 class OctoLauncher(Button):
     pass
@@ -187,7 +194,7 @@ class OctoEditServer(GridLayout):
 
 class OctoApp(App):
     def build(self):
-        #self.settings_cls = OctoSettings
+        self.settings_cls = SettingsWithSidebar
         octo_over = OctoOverlay()
         self.octo = octo_over.octo
         self.octo_over = octo_over

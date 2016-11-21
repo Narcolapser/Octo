@@ -27,7 +27,7 @@ class Catalina_Panel(ScrollView):
         self.cl = []
 
         #check for new content once a second.
-        Clock.schedule_interval(self.update,1)
+        Clock.schedule_interval(self.update,10)
 
     def update(self, *args):
         '''
@@ -45,20 +45,22 @@ class Catalina_Panel(ScrollView):
         for line in self.text.split('\n')[:-1]:
             if hash(line) in self.lines:
                 continue
-            l = ContentLabel(text=line)
+            l = ContentLabel(self,text=line)
             l.g_width = self.g_width
             
             self.ids['content_grid'].add_widget(l)
             self.cl.append(l)
             self.lines.append(hash(line))
 
-        for l in self.cl:
-            l.g_width = self.ids['content_grid'].size[0]
-
 
 class ContentLabel(Label):
-    g_width = NumericProperty(750)
+    def __init__(self, cp, **kwargs):
+        self.cp = cp
+        super(ContentLabel, self).__init__(**kwargs)
+        print(cp)
 
+        
+        
 #height: self.texture_size[1]
 kv = '''
 <Catalina_Panel>:
@@ -81,7 +83,7 @@ kv = '''
         height: self.minimum_height
 
 <ContentLabel>:
-    text_size: self.g_width,None
+    text_size: self.cp.g_width,None
     halign: 'left'
     size_hint_y: None
     
